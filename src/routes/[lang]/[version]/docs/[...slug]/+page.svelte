@@ -2,6 +2,7 @@
   import { base } from '$app/paths';
   import { page } from '$app/stores';
   import Sidebar from '$lib/components/Sidebar.svelte';
+  import PageToc from '$lib/components/PageToc.svelte';
   import type { TopicPage } from '$lib/docs/types';
 
   let { data }: { data: { topic: TopicPage; html: string } } = $props();
@@ -95,6 +96,11 @@
     </div>
   </main>
 
+  <div class="hidden px-5 py-8 xl:block">
+    {#key $page.url.pathname}
+      <PageToc toc={data.topic.toc} children={data.topic.children} />
+    {/key}
+  </div>
 </div>
 
 {#if mobileNav}
