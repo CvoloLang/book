@@ -1,0 +1,6 @@
+default = "main"
+
+[[versions]]
+id = "main"
+label = "main"
+description = "Development docs"

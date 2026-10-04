@@ -4,11 +4,13 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "svelte-kit sync && vite dev",
-    "build": "svelte-kit sync && vite build",
+    "docs:build": "node scripts/build-content.mjs",
+    "dev": "npm run docs:build && npm run docs:verify && svelte-kit sync && vite dev",
+    "build": "npm run docs:build && npm run docs:verify && svelte-kit sync && vite build",
     "preview": "vite preview",
-    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
-    "prepare": "svelte-kit sync"
+    "check": "npm run docs:build && npm run docs:verify && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "prepare": "npm run docs:build && svelte-kit sync",
+    "docs:verify": "node scripts/verify-content.mjs"
   },
   "devDependencies": {
     "@sveltejs/adapter-static": "^3.0.10",
@@ -22,11 +24,13 @@
     "typescript": "^5.9.3",
     "vite": "^7.3.6"
   },
-  "engines": {
-    "node": ">=22.12"
-  },
   "dependencies": {
     "marked": "^18.0.14",
-    "shiki": "^4.5.0"
+    "shiki": "^4.5.0",
+    "bits-ui": "^2.16.1",
+    "@lucide/svelte": "^0.575.0"
+  },
+  "engines": {
+    "node": ">=22.12"
   }
 }
