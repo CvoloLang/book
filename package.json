@@ -1,0 +1,26 @@
+{
+  "name": "cvolo-docs",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "svelte-kit sync && vite dev",
+    "build": "svelte-kit sync && vite build",
+    "preview": "vite preview",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "prepare": "svelte-kit sync"
+  },
+  "devDependencies": {
+    "@sveltejs/adapter-static": "^3.0.10",
+    "@sveltejs/kit": "^2.70.3",
+    "@sveltejs/vite-plugin-svelte": "^6.2.4",
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^22.18.0",
+    "svelte": "^5.57.1",
+    "svelte-check": "^4.3.3",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.6"
+  },
+  "engines": { "node": ">=22.12" }
+}

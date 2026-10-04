@@ -1,0 +1,11 @@
+node_modules
+.svelte-kit
+build
+.env
+.env.*
+!.env.example
+.DS_Store
+
+# Generated documentation data. Recreated by npm run docs:build.
+src/lib/generated/*.json
+static/search-index.json
