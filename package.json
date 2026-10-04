@@ -22,5 +22,11 @@
     "typescript": "^5.9.3",
     "vite": "^7.3.6"
   },
-  "engines": { "node": ">=22.12" }
+  "engines": {
+    "node": ">=22.12"
+  },
+  "dependencies": {
+    "marked": "^18.0.14",
+    "shiki": "^4.5.0"
+  }
 }

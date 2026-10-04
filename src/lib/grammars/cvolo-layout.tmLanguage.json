@@ -1,0 +1,167 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Cvolo layout",
+  "scopeName": "source.cvolo-layout",
+  "patterns": [
+    {
+      "include": "#title"
+    },
+    {
+      "include": "#target"
+    },
+    {
+      "include": "#fact"
+    },
+    {
+      "include": "#table-heading"
+    },
+    {
+      "include": "#padding-row"
+    },
+    {
+      "include": "#table-row"
+    },
+    {
+      "include": "#blank-line"
+    }
+  ],
+  "repository": {
+    "title": {
+      "match": "^[^\\s:]+$",
+      "name": "entity.name.type.cvolo-layout"
+    },
+    "target": {
+      "match": "^(Target:)(\\s+)(\\S+)$",
+      "captures": {
+        "1": {
+          "name": "keyword.other.layout.cvolo-layout"
+        },
+        "3": {
+          "name": "support.constant.target.cvolo-layout"
+        }
+      }
+    },
+    "fact": {
+      "match": "^(?!(?:Target:))([A-Za-z][A-Za-z ]*)(:)(\\s+)(.+)$",
+      "captures": {
+        "1": {
+          "name": "keyword.other.layout.cvolo-layout"
+        },
+        "2": {
+          "name": "punctuation.separator.cvolo-layout"
+        },
+        "4": {
+          "patterns": [
+            {
+              "include": "#value"
+            }
+          ]
+        }
+      }
+    },
+    "table-heading": {
+      "match": "^(Offset\\s+Size\\s+Align\\s+Field\\s+Type)$",
+      "name": "markup.heading.cvolo-layout"
+    },
+    "padding-row": {
+      "match": "^((?:0x[0-9a-fA-F]+|\\d+)(?:\\s*\\(0x[0-9a-fA-F]+\\))?)(\\s+)((?:0x[0-9a-fA-F]+|\\d+)(?:\\s*\\(0x[0-9a-fA-F]+\\))?)(\\s+)(-)(\\s+)(<[^>]+>)(\\s*)$",
+      "captures": {
+        "1": {
+          "patterns": [
+            {
+              "include": "#value"
+            }
+          ]
+        },
+        "3": {
+          "patterns": [
+            {
+              "include": "#value"
+            }
+          ]
+        },
+        "5": {
+          "name": "punctuation.separator.cvolo-layout"
+        },
+        "7": {
+          "name": "comment.block.padding.cvolo-layout"
+        }
+      }
+    },
+    "table-row": {
+      "match": "^((?:0x[0-9a-fA-F]+|\\d+)(?:\\s*\\(0x[0-9a-fA-F]+\\))?)(\\s+)((?:0x[0-9a-fA-F]+|\\d+)(?:\\s*\\(0x[0-9a-fA-F]+\\))?)(\\s+)((?:0x[0-9a-fA-F]+|\\d+)(?:\\s*\\(0x[0-9a-fA-F]+\\))?)(\\s+)(\\S+)(\\s+)(.+)$",
+      "captures": {
+        "1": {
+          "patterns": [
+            {
+              "include": "#value"
+            }
+          ]
+        },
+        "3": {
+          "patterns": [
+            {
+              "include": "#value"
+            }
+          ]
+        },
+        "5": {
+          "patterns": [
+            {
+              "include": "#value"
+            }
+          ]
+        },
+        "7": {
+          "name": "variable.other.member.cvolo-layout"
+        },
+        "9": {
+          "patterns": [
+            {
+              "include": "#type"
+            }
+          ]
+        }
+      }
+    },
+    "type": {
+      "patterns": [
+        {
+          "include": "#value"
+        },
+        {
+          "match": "\\b[A-Za-z_][A-Za-z0-9_]*(?:<[^>]*>)?",
+          "name": "entity.name.type.cvolo-layout"
+        },
+        {
+          "match": "[\\[\\]]",
+          "name": "punctuation.separator.cvolo-layout"
+        }
+      ]
+    },
+    "value": {
+      "patterns": [
+        {
+          "match": "0x[0-9a-fA-F]+",
+          "name": "constant.numeric.cvolo-layout"
+        },
+        {
+          "match": "\\d+(?:\\.\\d+)?%?",
+          "name": "constant.numeric.cvolo-layout"
+        },
+        {
+          "match": "\\b(bytes?)\\b",
+          "name": "keyword.other.unit.cvolo-layout"
+        },
+        {
+          "match": "\\(|\\)|\\[|\\]",
+          "name": "punctuation.separator.cvolo-layout"
+        }
+      ]
+    },
+    "blank-line": {
+      "match": "^\\s*$",
+      "name": "meta.separator.blank-line.cvolo-layout"
+    }
+  }
+}
