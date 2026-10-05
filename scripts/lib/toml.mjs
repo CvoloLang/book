@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { readFile } from 'node:fs/promises';
 
 function stripComment(line) {

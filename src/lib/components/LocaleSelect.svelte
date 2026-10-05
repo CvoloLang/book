@@ -30,7 +30,7 @@
   }
 </script>
 
-<Select.Root type="single" value onValueChange={(next) => next && change(String(next))} items={items}>
+<Select.Root type="single" value={value} onValueChange={(next) => next && change(String(next))} items={items}>
   <Select.Trigger
     aria-label="Language"
     class="group flex h-8 min-w-[72px] items-center gap-2 rounded-md border border-zinc-200/80 bg-white px-2.5 text-[12px] font-medium text-zinc-700 shadow-sm outline-none transition hover:border-zinc-300 hover:bg-zinc-50 focus-visible:ring-2 focus-visible:ring-violet-500/25 dark:border-zinc-800 dark:bg-zinc-900/80 dark:text-zinc-200 dark:hover:border-zinc-700 dark:hover:bg-zinc-900"

@@ -2,7 +2,7 @@ name: Deploy documentation to GitHub Pages
 
 on:
   push:
-    branches: [main]
+    branches: [master]
   workflow_dispatch:
 
 permissions:
@@ -24,7 +24,7 @@ jobs:
           node-version: 22
       - name: Configure Pages
         uses: actions/configure-pages@v5
-      - run: npm install
+      - run: npm ci
       - name: Resolve GitHub Pages base path
         shell: bash
         run: |

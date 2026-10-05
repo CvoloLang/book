@@ -60,6 +60,7 @@
       </header>
 
       {#if data.html}
+        <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
         <article class="doc-prose" onclick={articleClick}>{@html data.html}</article>
       {:else}
         <p class="text-sm leading-6 text-zinc-500 dark:text-zinc-400">This heading is a section container. Choose one of the topics below.</p>

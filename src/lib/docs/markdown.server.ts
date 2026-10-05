@@ -4,8 +4,8 @@ import sourceLinksData from '$lib/generated/source-links.json';
 import anchorsData from '$lib/generated/anchors.json';
 import { escapeHtml, highlightCode } from './highlighter.server';
 
-const sourceLinks = sourceLinksData as Record<string, string>;
-const anchors = anchorsData as Record<string, Record<string, string>>;
+const sourceLinks = sourceLinksData as unknown as Record<string, Record<string, string>>;
+const anchors = anchorsData as unknown as Record<string, Record<string, Record<string, string>>>;
 
 function transliterateCyrillic(value: string) {
   const map: Record<string, string> = {
@@ -71,8 +71,8 @@ function injectStableHeadingIds(markdown: string) {
 }
 
 function rewriteMarkdownLinks(markdown: string, currentSlug: string, sourcePath: string, contextKey: string) {
-  const contextSourceLinks = (sourceLinks as Record<string, Record<string, string>>)[contextKey] ?? {};
-  const contextAnchors = (anchors as Record<string, Record<string, Record<string, string>>>)[contextKey] ?? {};
+	const contextSourceLinks = sourceLinks[contextKey] ?? {};
+	const contextAnchors = anchors[contextKey] ?? {};
   const sourceDir = path.posix.dirname(sourcePath.replaceAll('\\', '/'));
 
   return markdown.replace(/\[([^\]]+)\]\(([^)]+\.md(?:#[^)]*)?)\)/gi, (full, label: string, rawHref: string) => {

@@ -15,7 +15,7 @@
 
   let { open = $bindable(false) }: { open: boolean } = $props();
   let query = $state('');
-  let input: HTMLInputElement;
+  let input = $state<HTMLInputElement>();
   let items = $state<SearchItem[]>([]);
   let loading = $state(false);
   let loadFailed = $state(false);
