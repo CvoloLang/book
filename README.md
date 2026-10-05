@@ -80,6 +80,54 @@ description = "IgorShaposhnikov/Cvolo"
 
 Fenced Markdown code blocks are normalized before highlighting: surrounding blank lines are removed and common Markdown indentation is dedented while internal Cvolo indentation is preserved. Cvolo highlighting uses the bundled TextMate grammar through Shiki.
 
+## Markdown UI extensions
+
+The public docs stay readable as plain Markdown. A small renderer extension adds richer presentation without requiring MDX or embedded Svelte components.
+
+### Tabbed code blocks
+
+Adjacent fenced code blocks that declare `tab="..."` are rendered as one tabbed example:
+
+````markdown
+```json tab="v1/meta.json"
+{
+  "title": "1.0.0",
+  "root": "version"
+}
+```
+
+```json tab="v2/meta.json"
+{
+  "title": "2.0.0",
+  "root": "version"
+}
+```
+````
+
+The source remains normal fenced Markdown and is still readable on GitHub. Any fenced language supported by the highlighter can be used with `tab=`.
+
+### File trees
+
+Use a `files` fence around an ordinary ASCII tree:
+
+````markdown
+```files github="IgorShaposhnikov/Cvolo" ref="master"
+libraries/System/
+├── Console.cvl
+├── Environment.cvl
+├── IO/
+├── Math/
+├── Collections/
+├── Text/
+├── Threading/
+└── ...
+```
+````
+
+On GitHub this remains a readable tree; on the documentation site folders are collapsible with a short open/close animation. `tree`, `filetree` and `file` are accepted aliases, but `files` is the preferred spelling.
+
+When a tree declares `github="owner/repo"` (and optionally `ref="branch-or-tag"` and `root="path/prefix"`), file rows become clickable. The site derives the repository path from the ASCII tree and opens an on-demand source modal with syntax highlighting, **Copy** and **View on GitHub** actions. Shiki is loaded lazily only when a source file is opened, and the source itself is fetched only on demand; folders and the Markdown source remain fully static.
+
 ## Versions
 
 `main` is currently the development documentation version. Stable releases can later be added to `config/versions.toml` and backed by matching content snapshots under `src/content/<version>/...`.

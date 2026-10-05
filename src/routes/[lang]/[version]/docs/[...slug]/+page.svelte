@@ -8,13 +8,145 @@
   let { data }: { data: { topic: TopicPage; html: string } } = $props();
   let mobileNav = $state(false);
   let copyReset: number | undefined;
+  let sourceOpen = $state(false);
+  let sourceLoading = $state(false);
+  let sourcePath = $state('');
+  let sourceCode = $state('');
+  let sourceHtml = $state('');
+  let sourceError = $state('');
+  let sourceGithubUrl = $state('');
+  let sourceRequest = 0;
+  const sourceCache = new Map<string, { code: string; html: string }>();
+
+  function closeSource() {
+    sourceOpen = false;
+  }
+
+  function onWindowKeydown(event: KeyboardEvent) {
+    if (event.key === 'Escape' && sourceOpen) closeSource();
+  }
+
+  async function openSource(button: HTMLButtonElement) {
+    const rawUrl = button.dataset.sourceRawUrl ?? '';
+    const githubUrl = button.dataset.sourceGithubUrl ?? '';
+    const path = button.dataset.sourcePath ?? '';
+    if (!rawUrl) return;
+
+    sourcePath = path;
+    sourceGithubUrl = githubUrl;
+    sourceError = '';
+    sourceOpen = true;
+
+    const cached = sourceCache.get(rawUrl);
+    if (cached !== undefined) {
+      sourceCode = cached.code;
+      sourceHtml = cached.html;
+      sourceLoading = false;
+      return;
+    }
+
+    const request = ++sourceRequest;
+    sourceCode = '';
+    sourceHtml = '';
+    sourceLoading = true;
+    try {
+      const response = await fetch(rawUrl, { headers: { Accept: 'text/plain' } });
+      if (!response.ok) throw new Error(`GitHub returned ${response.status}`);
+      const code = await response.text();
+      if (request !== sourceRequest) return;
+      const { highlightSource } = await import('$lib/docs/highlighter.client');
+      const html = await highlightSource(code, path);
+      if (request !== sourceRequest) return;
+      sourceCache.set(rawUrl, { code, html });
+      sourceCode = code;
+      sourceHtml = html;
+    } catch (error) {
+      if (request !== sourceRequest) return;
+      sourceError = error instanceof Error ? error.message : 'Could not load the source file.';
+    } finally {
+      if (request === sourceRequest) sourceLoading = false;
+    }
+  }
+
+  async function copySource() {
+    if (!sourceCode) return;
+    await navigator.clipboard.writeText(sourceCode);
+  }
+
+
+  function toggleFileTreeFolder(summary: HTMLElement) {
+    const details = summary.closest<HTMLDetailsElement>('details.file-tree-folder');
+    const content = details?.querySelector<HTMLElement>(':scope > .file-tree-children');
+    if (!details || !content || details.dataset.animating === 'true') return;
+
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      details.open = !details.open;
+      return;
+    }
+
+    details.dataset.animating = 'true';
+    const closing = details.open;
+    if (!closing) details.open = true;
+    details.classList.toggle('is-closing', closing);
+
+    const height = content.scrollHeight;
+    const animation = content.animate(
+      closing
+        ? [{ height: `${height}px`, opacity: 1 }, { height: '0px', opacity: 0 }]
+        : [{ height: '0px', opacity: 0 }, { height: `${height}px`, opacity: 1 }],
+      { duration: 210, easing: 'cubic-bezier(.2,.8,.2,1)' }
+    );
+
+    animation.addEventListener('finish', () => {
+      if (closing) details.open = false;
+      details.classList.remove('is-closing');
+      delete details.dataset.animating;
+    }, { once: true });
+    animation.addEventListener('cancel', () => {
+      details.classList.remove('is-closing');
+      delete details.dataset.animating;
+    }, { once: true });
+  }
 
   async function articleClick(event: MouseEvent) {
     const target = event.target as HTMLElement;
+
+    const folderSummary = target.closest<HTMLElement>('.file-tree-folder-row');
+    if (folderSummary) {
+      event.preventDefault();
+      toggleFileTreeFolder(folderSummary);
+      return;
+    }
+
+    const sourceButton = target.closest<HTMLButtonElement>('[data-source-file]');
+    if (sourceButton) {
+      await openSource(sourceButton);
+      return;
+    }
+
+    const tabButton = target.closest<HTMLButtonElement>('[data-code-tab-button]');
+    if (tabButton) {
+      const tabs = tabButton.closest<HTMLElement>('[data-code-tabs]');
+      if (!tabs) return;
+      const index = tabButton.dataset.tabIndex;
+      for (const button of tabs.querySelectorAll<HTMLButtonElement>('[data-code-tab-button]')) {
+        const active = button.dataset.tabIndex === index;
+        button.classList.toggle('active', active);
+        button.setAttribute('aria-selected', String(active));
+        button.tabIndex = active ? 0 : -1;
+      }
+      for (const panel of tabs.querySelectorAll<HTMLElement>('[data-code-tab-panel]')) {
+        panel.hidden = panel.dataset.tabIndex !== index;
+      }
+      return;
+    }
+
     const button = target.closest<HTMLButtonElement>('[data-copy-code]');
     if (!button) return;
-    const frame = button.closest('.code-frame');
-    const code = frame?.querySelector('pre code')?.textContent ?? '';
+    const container = button.closest<HTMLElement>('.code-frame, [data-code-tabs]');
+    const code = container?.matches('[data-code-tabs]')
+      ? (container.querySelector<HTMLElement>('[data-code-tab-panel]:not([hidden]) pre code')?.textContent ?? '')
+      : (container?.querySelector<HTMLElement>('pre code')?.textContent ?? '');
     if (!code) return;
     await navigator.clipboard.writeText(code);
     button.textContent = 'Copied';
@@ -22,6 +154,8 @@
     copyReset = window.setTimeout(() => (button.textContent = 'Copy'), 1200);
   }
 </script>
+
+<svelte:window onkeydown={onWindowKeydown} />
 
 <svelte:head>
   <title>{data.topic.title} · Cvolo</title>
@@ -112,6 +246,40 @@
         <button type="button" onclick={() => (mobileNav = false)} class="grid size-8 place-items-center rounded-md text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-900" aria-label="Close navigation">×</button>
       </div>
       <Sidebar onNavigate={() => (mobileNav = false)} />
+    </div>
+  </div>
+{/if}
+
+{#if sourceOpen}
+  <div class="source-modal-backdrop" role="presentation" onclick={(event) => event.currentTarget === event.target && closeSource()}>
+    <div class="source-modal" role="dialog" aria-modal="true" aria-label={`Source: ${sourcePath}`}>
+      <header class="source-modal-header">
+        <div class="min-w-0">
+          <div class="source-modal-eyebrow">{$page.params.lang === 'ru' ? 'Исходник GitHub' : 'GitHub source'}</div>
+          <div class="source-modal-path" title={sourcePath}>{sourcePath}</div>
+        </div>
+        <div class="source-modal-actions">
+          {#if sourceGithubUrl}
+            <a class="source-modal-action" href={sourceGithubUrl} target="_blank" rel="noreferrer">{$page.params.lang === 'ru' ? 'Открыть на GitHub ↗' : 'View on GitHub ↗'}</a>
+          {/if}
+          <button class="source-modal-action" type="button" onclick={copySource} disabled={!sourceCode}>{$page.params.lang === 'ru' ? 'Копировать' : 'Copy'}</button>
+          <button class="source-modal-close" type="button" onclick={closeSource} aria-label={$page.params.lang === 'ru' ? 'Закрыть исходник' : 'Close source viewer'}>×</button>
+        </div>
+      </header>
+
+      <div class="source-modal-body">
+        {#if sourceLoading}
+          <div class="source-modal-state">{$page.params.lang === 'ru' ? 'Загрузка исходника с GitHub…' : 'Loading source from GitHub…'}</div>
+        {:else if sourceError}
+          <div class="source-modal-state source-modal-error">
+            <strong>{$page.params.lang === 'ru' ? 'Не удалось загрузить файл.' : 'Could not load this file.'}</strong>
+            <span>{sourceError}</span>
+            {#if sourceGithubUrl}<a href={sourceGithubUrl} target="_blank" rel="noreferrer">{$page.params.lang === 'ru' ? 'Открыть файл на GitHub ↗' : 'Open it on GitHub ↗'}</a>{/if}
+          </div>
+        {:else}
+          <div class="source-modal-highlight">{@html sourceHtml}</div>
+        {/if}
+      </div>
     </div>
   </div>
 {/if}

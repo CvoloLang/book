@@ -210,3 +210,267 @@ html {
 .doc-prose :is(h2, h3, h4, h5, h6)[id] {
   scroll-margin-top: calc(var(--header-h) + 1.5rem);
 }
+
+/* Markdown extension: adjacent fenced blocks with tab="..." become one
+   accessible tabbed code example. Raw Markdown remains readable in GitHub. */
+.code-tabs {
+  margin: 1.35rem 0;
+  overflow: hidden;
+  border: 1px solid rgb(228 228 231);
+  border-radius: .75rem;
+  background: #fff;
+}
+.dark .code-tabs { border-color: rgb(39 39 42); background: #0d1117; }
+.code-tabs-toolbar {
+  display: flex;
+  min-height: 2.5rem;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: .75rem;
+  border-bottom: 1px solid rgb(228 228 231);
+  background: rgb(250 250 250);
+  padding-right: .45rem;
+}
+.dark .code-tabs-toolbar { border-color: rgb(39 39 42); background: rgb(24 24 27); }
+.code-tab-list {
+  display: flex;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.code-tab-list::-webkit-scrollbar { display: none; }
+.code-tab {
+  position: relative;
+  flex: 0 0 auto;
+  border: 0;
+  background: transparent;
+  padding: 0 .9rem;
+  color: rgb(113 113 122);
+  cursor: pointer;
+  font: 600 .76rem/2.5rem ui-sans-serif, system-ui, sans-serif;
+  transition: color .15s ease, background .15s ease;
+}
+.code-tab:hover { color: rgb(39 39 42); background: rgb(244 244 245); }
+.dark .code-tab { color: rgb(161 161 170); }
+.dark .code-tab:hover { color: rgb(228 228 231); background: rgb(39 39 42 / .55); }
+.code-tab::after {
+  content: '';
+  position: absolute;
+  right: .75rem;
+  bottom: 0;
+  left: .75rem;
+  height: 2px;
+  border-radius: 999px 999px 0 0;
+  background: transparent;
+  transform: scaleX(.45);
+  transition: background .15s ease, transform .18s ease;
+}
+.code-tab.active { color: rgb(109 40 217); }
+.dark .code-tab.active { color: rgb(196 181 253); }
+.code-tab.active::after { background: rgb(124 58 237); transform: scaleX(1); }
+.dark .code-tab.active::after { background: rgb(167 139 250); }
+.code-tabs-toolbar > .code-copy { align-self: center; flex: 0 0 auto; }
+.code-tab-panel[hidden] { display: none; }
+.code-tab-panel .shiki {
+  margin: 0;
+  overflow-x: auto;
+  padding: 1rem 1.15rem;
+  background: transparent !important;
+  font: .88rem/1.55 "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  tab-size: 4;
+}
+.code-tab-panel .shiki code { display: block; min-width: max-content; white-space: pre; }
+html.dark .code-tab-panel .shiki { background: transparent !important; }
+html.dark .code-tab-panel .shiki span { background-color: transparent !important; }
+
+/* Markdown extension: ```files renders an ASCII tree as an interactive file browser
+   while the source remains perfectly readable on GitHub and in editors. */
+.file-tree {
+  margin: 1.35rem 0;
+  overflow-x: auto;
+  border: 1px solid rgb(228 228 231);
+  border-radius: .75rem;
+  background: rgb(250 250 250);
+  padding: .8rem .7rem;
+  color: rgb(63 63 70);
+  font-size: .9rem;
+  line-height: 1.45;
+}
+.dark .file-tree {
+  border-color: rgb(39 39 42);
+  background: rgb(24 24 27 / .62);
+  color: rgb(212 212 216);
+}
+.file-tree-node { min-width: max-content; }
+.file-tree-node > summary { list-style: none; }
+.file-tree-node > summary::-webkit-details-marker { display: none; }
+.file-tree-children { min-width: max-content; transform-origin: top; will-change: height, opacity; }
+.file-tree-row {
+  display: flex;
+  width: 100%;
+  min-width: max-content;
+  align-items: center;
+  gap: .55rem;
+  min-height: 2rem;
+  border: 0;
+  border-radius: .4rem;
+  background: transparent;
+  padding: .2rem .45rem .2rem calc(.45rem + var(--tree-depth) * 1.35rem);
+  color: inherit;
+  text-align: left;
+}
+.file-tree-folder-row,
+.file-tree-source { cursor: pointer; }
+.file-tree-row:hover { background: rgb(244 244 245); }
+.dark .file-tree-row:hover { background: rgb(39 39 42 / .72); }
+.file-tree-root > .file-tree-folder-row { font-weight: 650; color: rgb(39 39 42); }
+.dark .file-tree-root > .file-tree-folder-row { color: rgb(244 244 245); }
+.file-tree-chevron,
+.file-tree-spacer {
+  display: grid;
+  width: .9rem;
+  height: .9rem;
+  flex: 0 0 .9rem;
+  place-items: center;
+}
+.file-tree-chevron { color: rgb(113 113 122); transition: transform .16s ease; }
+.file-tree-chevron svg { width: .85rem; height: .85rem; }
+.file-tree-folder[open] > .file-tree-folder-row .file-tree-chevron { transform: rotate(90deg); }
+.file-tree-folder.is-closing > .file-tree-folder-row .file-tree-chevron { transform: rotate(0deg); }
+.file-tree-icon {
+  display: grid;
+  width: 1.15rem;
+  height: 1.15rem;
+  flex: 0 0 1.15rem;
+  place-items: center;
+  color: rgb(113 113 122);
+}
+.dark .file-tree-icon { color: rgb(161 161 170); }
+.file-tree-icon svg { width: 1.05rem; height: 1.05rem; }
+.file-tree-folder-row .file-tree-icon { color: rgb(124 58 237); }
+.dark .file-tree-folder-row .file-tree-icon { color: rgb(167 139 250); }
+.file-tree-name { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; font-size: .86rem; }
+.file-tree-ellipsis { color: rgb(161 161 170); }
+.file-tree-ellipsis-icon { width: 1.15rem; flex: 0 0 1.15rem; font-size: .65rem; letter-spacing: .04em; text-align: center; }
+.file-tree-open-hint {
+  margin-left: auto;
+  padding-left: 1.5rem;
+  color: rgb(161 161 170);
+  font: 500 .68rem/1 ui-sans-serif, system-ui, sans-serif;
+  opacity: 0;
+  transition: opacity .15s ease, color .15s ease;
+}
+.file-tree-source:hover .file-tree-open-hint,
+.file-tree-source:focus-visible .file-tree-open-hint { opacity: 1; color: rgb(109 40 217); }
+.dark .file-tree-source:hover .file-tree-open-hint,
+.dark .file-tree-source:focus-visible .file-tree-open-hint { color: rgb(196 181 253); }
+.file-tree-source:focus-visible,
+.file-tree-folder-row:focus-visible { outline: 2px solid rgb(139 92 246 / .45); outline-offset: -2px; }
+
+/* On-demand GitHub source viewer used by clickable ```files trees. */
+.source-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  background: rgb(9 9 11 / .72);
+  padding: clamp(.75rem, 3vw, 2rem);
+  backdrop-filter: blur(5px);
+}
+.source-modal {
+  display: flex;
+  width: min(56.25rem, calc(100vw - 3rem));
+  height: min(43.75rem, calc(100vh - 4rem));
+  max-width: 100%;
+  max-height: 100%;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid rgb(228 228 231);
+  border-radius: .9rem;
+  background: white;
+  box-shadow: 0 28px 80px rgb(0 0 0 / .35);
+}
+.dark .source-modal { border-color: rgb(63 63 70); background: rgb(9 9 11); }
+.source-modal-header {
+  display: flex;
+  height: 3.5rem;
+  min-height: 3.5rem;
+  flex: 0 0 3.5rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 1px solid rgb(228 228 231);
+  padding: .65rem .75rem .65rem 1rem;
+  background: rgb(250 250 250);
+}
+.dark .source-modal-header { border-color: rgb(39 39 42); background: rgb(24 24 27); }
+.source-modal-eyebrow { margin-bottom: .2rem; color: rgb(124 58 237); font-size: .65rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+.dark .source-modal-eyebrow { color: rgb(167 139 250); }
+.source-modal-path { overflow: hidden; color: rgb(39 39 42); font: 600 .78rem/1.35 "SFMono-Regular", Consolas, monospace; text-overflow: ellipsis; white-space: nowrap; }
+.dark .source-modal-path { color: rgb(228 228 231); }
+.source-modal-actions { display: flex; flex: 0 0 auto; align-items: center; gap: .35rem; }
+.source-modal-action,
+.source-modal-close {
+  display: inline-flex;
+  min-height: 2rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgb(228 228 231);
+  border-radius: .45rem;
+  background: white;
+  padding: 0 .7rem;
+  color: rgb(82 82 91);
+  font-size: .72rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+.source-modal-close { width: 2rem; padding: 0; font-size: 1.15rem; }
+.source-modal-action:hover,
+.source-modal-close:hover { border-color: rgb(196 181 253); color: rgb(109 40 217); }
+.source-modal-action:disabled { cursor: default; opacity: .45; }
+.dark .source-modal-action,
+.dark .source-modal-close { border-color: rgb(63 63 70); background: rgb(24 24 27); color: rgb(212 212 216); }
+.dark .source-modal-action:hover,
+.dark .source-modal-close:hover { border-color: rgb(109 40 217); color: rgb(196 181 253); }
+.source-modal-body { min-height: 0; flex: 1 1 auto; overflow: auto; background: rgb(250 250 250); }
+.dark .source-modal-body { background: #0d1117; }
+.source-modal-highlight { min-width: max-content; }
+.source-modal-highlight .shiki {
+  min-width: max-content;
+  margin: 0;
+  padding: 1.15rem 1.25rem 1.5rem;
+  background: transparent !important;
+  font: .84rem/1.6 "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  tab-size: 4;
+}
+.source-modal-highlight .shiki code { display: block; min-width: max-content; white-space: pre; }
+.source-modal-highlight .plain-code { color: rgb(39 39 42); }
+.dark .source-modal-highlight .plain-code { color: rgb(228 228 231); }
+html.dark .source-modal-highlight .shiki { background: transparent !important; }
+html.dark .source-modal-highlight .shiki span { background-color: transparent !important; }
+.source-modal-state {
+  display: flex;
+  min-height: 14rem;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .55rem;
+  padding: 2rem;
+  color: rgb(113 113 122);
+  text-align: center;
+}
+.source-modal-state strong { color: rgb(39 39 42); }
+.dark .source-modal-state strong { color: rgb(228 228 231); }
+.source-modal-state a { color: rgb(109 40 217); text-underline-offset: 3px; }
+.dark .source-modal-state a { color: rgb(167 139 250); }
+.source-modal-error { color: rgb(161 98 7); }
+
+@media (max-width: 640px) {
+  .source-modal-backdrop { padding: .5rem; }
+  .source-modal { width: 100%; height: calc(100dvh - 1rem); max-width: none; max-height: none; border-radius: .7rem; }
+  .source-modal-header { align-items: flex-start; }
+  .source-modal-actions { flex-wrap: wrap; justify-content: flex-end; }
+  .source-modal-action { padding-inline: .5rem; }
+  .file-tree-open-hint { display: none; }
+}
