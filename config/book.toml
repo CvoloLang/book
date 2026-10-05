@@ -34,35 +34,5 @@ title_en = "Book"
 title_ru = "Учебник"
 eyebrow_en = "Tutorial"
 eyebrow_ru = "Tutorial"
-description_en = "A practical path from the first Cvolo program to systems-level features."
-description_ru = "Последовательное изучение Cvolo: от первой программы до системных возможностей."
-
-[[sections]]
-id = "advanced"
-order = 1
-title_en = "Advanced"
-title_ru = "Продвинутая книга"
-eyebrow_en = "Advanced"
-eyebrow_ru = "Advanced"
-description_en = "Lowering, compilation model, abstraction cost, and technical contracts."
-description_ru = "Lowering, модель компиляции, стоимость абстракций и точные технические контракты."
-
-[[sections]]
-id = "base"
-order = 2
-title_en = "Base"
-title_ru = "Base"
-eyebrow_en = "Base SDK"
-eyebrow_ru = "Base SDK"
-description_en = "The always-available language foundation: Option, Result, Type, default, and compiler-known attributes."
-description_ru = "Всегда доступный фундамент языка: Option, Result, Type, default и compiler-known attributes."
-
-[[sections]]
-id = "std"
-order = 3
-title_en = "Std / System"
-title_ru = "Std / System"
-eyebrow_en = "Standard library"
-eyebrow_ru = "Standard library"
-description_en = "Hosted standard-library APIs layered on top of Base."
-description_ru = "Hosted-стандартная библиотека: System и API поверх Base."
+description_en = "A minimal public starting point for the first Cvolo program."
+description_ru = "Минимальная публичная стартовая страница с первой программой Cvolo."

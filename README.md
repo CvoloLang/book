@@ -28,18 +28,15 @@ Human-maintained documentation lives in:
 src/content/<version>/<language>/<section>/
 ```
 
-Current public sections are:
+Current public section:
 
-- **Book** — chapter-by-chapter tutorial
-- **Advanced** — lowering, compiler model and detailed semantics
-- **Base** — the always-available SDK layer
-- **Std / System** — hosted standard-library documentation
+- **Book** — the minimal public Hello World page
 
 Translated pages use language-neutral filenames and routes. For example:
 
 ```text
-/en/main/docs/book/01-introduction/1-1-hello-world/
-/ru/main/docs/book/01-introduction/1-1-hello-world/
+/en/main/docs/book/01-introduction/hello-world/
+/ru/main/docs/book/01-introduction/hello-world/
 ```
 
 Changing the locale therefore changes only the locale segment when the translation exists.
@@ -83,6 +80,10 @@ Fenced Markdown code blocks are normalized before highlighting: surrounding blan
 ## Versions
 
 `main` is currently the development documentation version. Stable releases can later be added to `config/versions.toml` and backed by matching content snapshots under `src/content/<version>/...`.
+
+## Full development docs
+
+The broader in-progress documentation set is preserved on the `dev` branch. `master` is intentionally kept small for the first public GitHub Pages deployment.
 
 ## Future library documentation
 

@@ -13,7 +13,7 @@
 
 <svelte:head>
   <title>{siteConfig.site.title}</title>
-  <meta name="description" content="Cvolo documentation: Book, Advanced, Base SDK, and standard library." />
+  <meta name="description" content="Cvolo documentation: start with the first Hello World program." />
 </svelte:head>
 
 <main>
