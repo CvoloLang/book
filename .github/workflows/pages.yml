@@ -24,6 +24,8 @@ jobs:
           node-version: 22
       - name: Configure Pages
         uses: actions/configure-pages@v5
+        with:
+          enablement: true
       - run: npm ci
       - name: Resolve GitHub Pages base path
         shell: bash
