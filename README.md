@@ -54,7 +54,7 @@ config/
 └── versions.toml
 ```
 
-`book.toml` owns site metadata, supported languages and the top-level documentation sections. `versions.toml` owns the documentation versions shown in the version selector.
+`book.toml` owns site metadata, supported languages, top-level documentation sections and the GitHub links shown in the header menu. `versions.toml` owns the documentation versions shown in the version selector.
 
 Do not edit generated JSON by hand. `npm run docs:build` derives navigation, routes, search data and UI configuration from TOML plus Markdown:
 
@@ -64,6 +64,17 @@ static/search-index.json
 ```
 
 These generated files are intentionally ignored by Git and are recreated before development/build commands run.
+
+GitHub destinations are configured without touching Svelte code. Add or edit `[[github_links]]` entries in `config/book.toml`:
+
+```toml
+[[github_links]]
+id = "compiler"
+url = "https://github.com/IgorShaposhnikov/Cvolo/tree/master"
+label_en = "Cvolo compiler"
+label_ru = "Компилятор Cvolo"
+description = "IgorShaposhnikov/Cvolo"
+```
 
 ## Code blocks
 

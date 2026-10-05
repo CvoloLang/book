@@ -1,8 +1,21 @@
 title = "Cvolo Docs"
 site_name = "Cvolo"
-repository = "https://github.com/CvoloCommunityToolkit/Book"
 default_language = "en"
 default_version = "main"
+
+[[github_links]]
+id = "compiler"
+url = "https://github.com/IgorShaposhnikov/Cvolo/tree/master"
+label_en = "Cvolo compiler"
+label_ru = "Компилятор Cvolo"
+description = "IgorShaposhnikov/Cvolo"
+
+[[github_links]]
+id = "documentation"
+url = "https://github.com/CvoloLang/book"
+label_en = "Documentation"
+label_ru = "Документация"
+description = "CvoloLang/book"
 
 [[languages]]
 id = "en"

@@ -46,7 +46,6 @@ async function loadSiteConfig() {
     site: {
       title: String(book.title ?? 'Cvolo Docs'),
       name: String(book.site_name ?? 'Cvolo'),
-      repository: String(book.repository ?? ''),
       defaultLanguage,
       defaultVersion
     },
@@ -60,6 +59,15 @@ async function loadSiteConfig() {
       label: String(version.label ?? version.id),
       description: String(version.description ?? '')
     })),
+    githubLinks: (book.github_links ?? []).map((link) => ({
+      id: String(link.id ?? ''),
+      url: String(link.url ?? ''),
+      description: String(link.description ?? ''),
+      labels: Object.fromEntries(configuredLanguages.map((language) => {
+        const lang = String(language.id);
+        return [lang, String(link[`label_${lang}`] ?? link.label_en ?? link.id ?? 'GitHub')];
+      }))
+    })).filter((link) => link.id && link.url),
     sections: (book.sections ?? []).map((section) => ({
       id: String(section.id),
       order: Number(section.order ?? 99),
