@@ -36,3 +36,13 @@ eyebrow_en = "Tutorial"
 eyebrow_ru = "Tutorial"
 description_en = "A minimal public starting point for the first Cvolo program."
 description_ru = "Минимальная публичная стартовая страница с первой программой Cvolo."
+
+[[sections]]
+id = "authoring"
+order = 10
+title_en = "Authoring"
+title_ru = "Как писать документацию"
+eyebrow_en = "Contributing"
+eyebrow_ru = "Для авторов"
+description_en = "Documentation authoring notes."
+description_ru = "Заметки для авторов документации."
