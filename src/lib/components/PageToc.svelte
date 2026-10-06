@@ -108,74 +108,50 @@
       const article = entries[0].element.closest<HTMLElement>('.doc-prose');
       let frame = 0;
 
-      // A section ends at the next heading of the same or a higher level.
-      // This is the key detail that lets a parent heading and the currently
-      // visible nested heading be active together, like Armarium's activeIds.
-      const endEntries = entries.map((entry, index) => {
-        for (let next = index + 1; next < entries.length; next += 1) {
-          if (entries[next].item.level <= entry.item.level) return entries[next].element;
-        }
-        return null;
-      });
-
+      // The current TOC item is the deepest heading that has crossed the
+      // reading line below the sticky header. Its parent headings remain
+      // active as the hierarchy around that item.
+      //
+      // This is intentionally position-based rather than overlap-based:
+      // short H3 sections should not lose their active state merely because
+      // less than an arbitrary amount of their content is visible.
       const update = () => {
         frame = 0;
 
-        const viewportTop = headerOffset() + 12;
-        const viewportBottom = Math.max(viewportTop + 1, window.innerHeight - 16);
-        const articleBottom = article?.getBoundingClientRect().bottom ?? document.documentElement.scrollHeight;
-        const nextActive: string[] = [];
+        const readingLine = headerOffset() + 24;
+        const atDocumentEnd =
+          window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 2;
+
+        let primaryIndex = -1;
 
         for (let index = 0; index < entries.length; index += 1) {
-          const { item, element } = entries[index];
-          const sectionTop = element.getBoundingClientRect().top;
-          const sectionBottom = endEntries[index]?.getBoundingClientRect().top ?? articleBottom;
-
-          // Active means that the *section content range* intersects the
-          // readable viewport, not merely that its heading crosses a line.
-          // Consequently two short neighboring sections can both be active,
-          // and a parent remains active while a child subsection is visible.
-          const overlap = Math.min(sectionBottom, viewportBottom) - Math.max(sectionTop, viewportTop);
-          const sectionHeight = Math.max(1, sectionBottom - sectionTop);
-
-          // Do not activate a section because only a 1-2 px tail happens to
-          // remain on screen. Require a meaningful amount of the *section
-          // content* to be visible. The threshold scales with the section but
-          // is capped, so long sections still activate naturally and tiny
-          // sections can still become active.
-          const requiredOverlap = Math.min(
-            sectionHeight * 0.6,
-            Math.max(32, Math.min(72, sectionHeight * 0.18))
-          );
-
-          if (overlap >= requiredOverlap) nextActive.push(item.id);
+          const top = entries[index].element.getBoundingClientRect().top;
+          if (top <= readingLine) primaryIndex = index;
+          else break;
         }
 
-        // At the exact document edges there can be a one-frame gap caused by
-        // rounding. Pick the nearest section only when nothing intersects.
-        if (!nextActive.length) {
-          const firstTop = entries[0].element.getBoundingClientRect().top;
-          const atDocumentEnd =
-            window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 2;
+        // Before the first heading becomes current, keep the first TOC item
+        // selected. At the exact bottom of the article, keep the final item.
+        if (primaryIndex < 0) primaryIndex = 0;
+        if (atDocumentEnd) primaryIndex = entries.length - 1;
 
-          if (firstTop >= viewportBottom) {
-            nextActive.push(entries[0].item.id);
-          } else if (articleBottom <= viewportTop || atDocumentEnd) {
-            // Keep the last visible leaf together with its hierarchy.
-            const lastIndex = entries.length - 1;
-            const chain: string[] = [entries[lastIndex].item.id];
-            let level = entries[lastIndex].item.level;
+        // Find the nearest parent heading of the current item. The violet
+        // indicator is continuous, so every TOC entry covered by that indicator
+        // must use the active colour as well. Otherwise we get a violet line
+        // spanning several rows while only the first and last rows are violet.
+        let rangeStart = primaryIndex;
+        const primaryLevel = entries[primaryIndex].item.level;
 
-            for (let index = lastIndex - 1; index >= 0; index -= 1) {
-              if (entries[index].item.level < level) {
-                chain.unshift(entries[index].item.id);
-                level = entries[index].item.level;
-              }
-            }
-
-            nextActive.push(...chain);
+        for (let index = primaryIndex - 1; index >= 0; index -= 1) {
+          if (entries[index].item.level < primaryLevel) {
+            rangeStart = index;
+            break;
           }
         }
+
+        const nextActive = entries
+          .slice(rangeStart, primaryIndex + 1)
+          .map((entry) => entry.item.id);
 
         if (!sameIds(nextActive, activeIds)) activeIds = nextActive;
       };
