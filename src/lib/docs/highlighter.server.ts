@@ -19,7 +19,8 @@ function getHighlighter() {
       'markdown',
       'bash',
       'javascript',
-      'typescript'
+      'typescript',
+      'diff'
     ]
   });
   return highlighterPromise;
@@ -36,8 +37,8 @@ function inferLanguage(code: string, requested?: string) {
     return 'text';
   }
   if (lang === 'antlr') return 'text';
-  if (['json', 'xml', 'c', 'llvm', 'markdown', 'md', 'bash', 'sh', 'javascript', 'js', 'typescript', 'ts'].includes(lang)) {
-    const aliases: Record<string, string> = { md: 'markdown', sh: 'bash', js: 'javascript', ts: 'typescript' };
+  if (['json', 'xml', 'c', 'llvm', 'markdown', 'md', 'bash', 'sh', 'javascript', 'js', 'typescript', 'ts', 'diff', 'patch'].includes(lang)) {
+    const aliases: Record<string, string> = { md: 'markdown', sh: 'bash', js: 'javascript', ts: 'typescript', patch: 'diff' };
     return aliases[lang] ?? lang;
   }
 
