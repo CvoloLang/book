@@ -1,10 +1,9 @@
 <script lang="ts">
-  import type { TocLink, TopicLink } from '$lib/docs/types';
-  import { base } from '$app/paths';
+  import type { TocLink } from '$lib/docs/types';
   import { page } from '$app/stores';
   import { tick } from 'svelte';
 
-  let { toc, children = [] }: { toc: TocLink[]; children?: TopicLink[] } = $props();
+  let { toc }: { toc: TocLink[] } = $props();
   const isRu = $derived($page.params.lang === 'ru');
 
   // Armarium keeps a set of active TOC entries, not one current heading.
@@ -254,18 +253,6 @@
           >{item.title}</a>
         {/each}
       </div>
-    </nav>
-  {:else if children.length}
-    <h2 class="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-400">
-      {isRu ? 'В этом разделе' : 'In this section'}
-    </h2>
-    <nav class="border-l border-zinc-200 dark:border-zinc-800">
-      {#each children.slice(0, 18) as child}
-        <a
-          href={`${base}/${$page.params.lang}/${$page.params.version}/docs/${child.slug}/`}
-          class="block border-l border-transparent py-1.5 pl-3 text-[13px] leading-5 text-zinc-500 transition-colors duration-200 hover:border-violet-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
-        >{child.title}</a>
-      {/each}
     </nav>
   {/if}
 </aside>
