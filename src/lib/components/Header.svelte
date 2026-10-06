@@ -1,6 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { base } from '$app/paths';
+  import type { ManifestGroup } from '$lib/docs/types';
+  import manifestData from '$lib/generated/manifest.json';
   import siteConfig from '$lib/generated/site-config.json';
   import { page } from '$app/stores';
   import LocaleSelect from './LocaleSelect.svelte';
@@ -8,12 +10,10 @@
   import GitHubLinks from './GitHubLinks.svelte';
 
   let { onSearch }: { onSearch: () => void } = $props();
+  const manifests = manifestData as Record<string, ManifestGroup[]>;
   let lang = $derived($page.params.lang ?? siteConfig.site.defaultLanguage);
   let version = $derived($page.params.version ?? siteConfig.site.defaultVersion);
-  let sections = $derived(siteConfig.sections.map((section) => {
-    const labels = section.labels as Record<string, { title: string; eyebrow: string; description: string }>;
-    return { id: section.id, label: labels[lang]?.title ?? labels[siteConfig.site.defaultLanguage]?.title ?? section.id };
-  }));
+  let sections = $derived(manifests[`${version}/${lang}`] ?? []);
   let dark = $state(false);
 
   onMount(() => {
@@ -39,7 +39,7 @@
 
     <nav class="ml-2 hidden items-center gap-1 text-sm md:flex">
       {#each sections as section}
-        <a href={`${base}/${lang}/${version}/docs/${section.id}/`} class="rounded-md px-2.5 py-1.5 text-zinc-600 hover:bg-zinc-100 hover:text-zinc-950 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-white">{section.label}</a>
+        <a href={`${base}/${lang}/${version}/docs/${section.id}/`} class="rounded-md px-2.5 py-1.5 text-zinc-600 hover:bg-zinc-100 hover:text-zinc-950 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-white">{section.title}</a>
       {/each}
     </nav>
 

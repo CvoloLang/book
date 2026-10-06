@@ -1,14 +1,16 @@
 <script lang="ts">
   import { base } from '$app/paths';
+  import type { ManifestGroup } from '$lib/docs/types';
+  import manifestData from '$lib/generated/manifest.json';
   import siteConfig from '$lib/generated/site-config.json';
 
   const language = siteConfig.site.defaultLanguage;
   const version = siteConfig.site.defaultVersion;
-  const sections = siteConfig.sections.map((section, index) => {
-    const labels = section.labels as Record<string, { title: string; eyebrow: string; description: string }>;
-    const label = labels[language] ?? labels[siteConfig.site.defaultLanguage];
-    return { ...section, index: index + 1, label };
-  });
+  const manifests = manifestData as Record<string, ManifestGroup[]>;
+  const sections = (manifests[`${version}/${language}`] ?? []).map((section, index) => ({
+    ...section,
+    index: index + 1
+  }));
 </script>
 
 <svelte:head>
@@ -37,9 +39,9 @@
     <div class="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
       {#each sections as section}
         <a href={`${base}/${language}/${version}/docs/${section.id}/`} class="group rounded-xl border border-zinc-200 p-5 transition hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-sm dark:border-zinc-800 dark:hover:border-violet-800">
-          <div class="text-xs font-semibold uppercase tracking-[0.12em] text-violet-600 dark:text-violet-400">{String(section.index).padStart(2, '0')} · {section.label.title}</div>
-          <h2 class="mt-2 text-lg font-semibold text-zinc-950 dark:text-white">{section.label.eyebrow}</h2>
-          <p class="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400">{section.label.description}</p>
+          <div class="text-xs font-semibold uppercase tracking-[0.12em] text-violet-600 dark:text-violet-400">{String(section.index).padStart(2, '0')} · {section.title}</div>
+          <h2 class="mt-2 text-lg font-semibold text-zinc-950 dark:text-white">{section.eyebrow}</h2>
+          <p class="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400">{section.description}</p>
         </a>
       {/each}
     </div>

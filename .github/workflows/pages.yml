@@ -28,12 +28,17 @@ jobs:
       - name: Resolve GitHub Pages base path
         shell: bash
         run: |
-          if [[ "${{ github.event.repository.name }}" == "${{ github.repository_owner }}.github.io" ]]; then
+          if [[ -n "${{ vars.DOCS_CUSTOM_DOMAIN }}" ]]; then
+            echo "BASE_PATH=" >> "$GITHUB_ENV"
+          elif [[ "${{ github.event.repository.name }}" == "${{ github.repository_owner }}.github.io" ]]; then
             echo "BASE_PATH=" >> "$GITHUB_ENV"
           else
             echo "BASE_PATH=/${{ github.event.repository.name }}" >> "$GITHUB_ENV"
           fi
       - run: npm run build
+      - name: Write custom domain
+        if: vars.DOCS_CUSTOM_DOMAIN != ''
+        run: echo "${{ vars.DOCS_CUSTOM_DOMAIN }}" > build/CNAME
       - uses: actions/upload-pages-artifact@v3
         with:
           path: build

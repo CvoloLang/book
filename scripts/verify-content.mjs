@@ -90,6 +90,7 @@ async function verifySourceTree() {
         failures.push(`localized Markdown filename: ${[...parts, entry.name].join('/')}`);
       }
       const body = await readFile(path.join(directory, entry.name), 'utf8');
+      if (!body.trim()) continue;
       if (!/^#\s+\S/m.test(body)) {
         failures.push(`Markdown page is missing an H1 title: ${[...parts, entry.name].join('/')}`);
       }

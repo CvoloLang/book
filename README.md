@@ -81,6 +81,29 @@ Fenced Markdown code blocks are normalized before highlighting: surrounding blan
 
 `main` is currently the development documentation version. Stable releases can later be added to `config/versions.toml` and backed by matching content snapshots under `src/content/<version>/...`.
 
+## Deployment
+
+This repository is the documentation site only. On GitHub Pages it deploys as a project site at:
+
+```text
+https://cvololang.github.io/book/
+```
+
+The landing/website should live in a separate `CvoloLang/cvololang.github.io` repository, which GitHub Pages serves at:
+
+```text
+https://cvololang.github.io/
+```
+
+When a custom domain is available, point the landing site at the apex domain and this docs site at a docs subdomain, for example:
+
+```text
+https://cvololang.org/
+https://docs.cvololang.org/
+```
+
+To deploy this repository at a custom docs domain, set the repository variable `DOCS_CUSTOM_DOMAIN` to the desired hostname, for example `docs.cvololang.org`. The Pages workflow will build without the `/book` base path and write the matching `CNAME` file into the static output.
+
 ## Full development docs
 
 The broader in-progress documentation set is preserved on the `dev` branch. `master` is intentionally kept small for the first public GitHub Pages deployment.
