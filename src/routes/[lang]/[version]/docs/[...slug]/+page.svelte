@@ -3,11 +3,19 @@
   import { page } from '$app/stores';
   import Sidebar from '$lib/components/Sidebar.svelte';
   import PageToc from '$lib/components/PageToc.svelte';
-  import type { TopicPage } from '$lib/docs/types';
+  import manifestData from '$lib/generated/manifest.json';
+  import type { ManifestGroup, TopicPage } from '$lib/docs/types';
 
   let { data }: { data: { topic: TopicPage; html: string } } = $props();
+  const manifests = manifestData as Record<string, ManifestGroup[]>;
   let mobileNav = $state(false);
   let copyReset: number | undefined;
+
+  let groupLabel = $derived.by(() => {
+    const groups = manifests[`${$page.params.version}/${$page.params.lang}`] ?? [];
+    const group = groups.find((item) => item.id === data.topic.groupId);
+    return group?.eyebrow || group?.title || data.topic.breadcrumbs[0]?.title || data.topic.groupId;
+  });
 
   async function articleClick(event: MouseEvent) {
     const target = event.target as HTMLElement;
@@ -54,7 +62,7 @@
 
       <header class="mb-8 border-b border-zinc-200 pb-6 dark:border-zinc-800">
         <div class="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-violet-600 dark:text-violet-400">
-          {data.topic.groupId === 'book' ? ($page.params.lang === 'ru' ? 'Учебник' : 'Book') : data.topic.groupId === 'advanced' ? ($page.params.lang === 'ru' ? 'Продвинутая книга' : 'Advanced') : data.topic.groupId === 'base' ? 'Base SDK' : 'Std / System'}
+          {groupLabel}
         </div>
         <h1 class="text-balance break-words text-3xl font-bold leading-tight tracking-[-0.025em] text-zinc-950 sm:text-4xl dark:text-white">{data.topic.title}</h1>
       </header>
@@ -99,7 +107,7 @@
 
   <div class="hidden px-5 py-8 xl:block">
     {#key $page.url.pathname}
-      <PageToc toc={data.topic.toc} children={data.topic.children} />
+      <PageToc toc={data.topic.toc} />
     {/key}
   </div>
 </div>
