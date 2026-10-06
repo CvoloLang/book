@@ -275,6 +275,8 @@ type CodeBlock = {
   kind: 'code' | 'files' | 'output';
   lineNumbers: boolean;
   highlightedLines: number[];
+  markedText: string[];
+  markedSlices: Array<{ line: number; start: number; end: number }>;
   fileSource?: FileTreeSource;
   sourcePath?: string;
   goToDefinitions: GoToDefinitionRule[];
@@ -334,6 +336,29 @@ function parseLineRanges(value?: string) {
   return [...result].sort((a, b) => a - b);
 }
 
+function parseMarkedText(value?: string) {
+  if (!value?.trim()) return [] as string[];
+  return value
+    .split('|')
+    .map((part) => part.trim())
+    .filter(Boolean);
+}
+
+function parseMarkedSlices(value?: string) {
+  if (!value?.trim()) return [] as Array<{ line: number; start: number; end: number }>;
+  const result: Array<{ line: number; start: number; end: number }> = [];
+  for (const part of value.split('|').map((item) => item.trim()).filter(Boolean)) {
+    const match = part.match(/^(\d+):(\d+):(\d+)$/);
+    if (!match) continue;
+    const line = Number(match[1]);
+    const start = Number(match[2]);
+    const end = Number(match[3]);
+    if (!Number.isInteger(line) || line < 1 || !Number.isInteger(start) || !Number.isInteger(end) || start < 0 || end < 0 || start === end) continue;
+    result.push({ line, start: Math.min(start, end), end: Math.max(start, end) });
+  }
+  return result;
+}
+
 function isCvoloDiffLanguage(language: string) {
   return /^diff-cvolo$/i.test(language.trim());
 }
@@ -359,7 +384,9 @@ function parseFenceInfo(info: string) {
     ? !/^(?:false|0|no|off)$/i.test(lineNumberSetting)
     : bareFlags.some((flag) => /^(?:lines|line-numbers|linenumbers)$/.test(flag));
 
-  const highlightedLines = parseLineRanges(attributes.highlight ?? attributes['highlight-lines'] ?? attributes.mark);
+  const highlightedLines = parseLineRanges(attributes.highlight ?? attributes['highlight-lines']);
+  const markedText = parseMarkedText(attributes.mark);
+  const markedSlices = parseMarkedSlices(attributes['mark-range']);
 
   return {
     language,
@@ -369,7 +396,9 @@ function parseFenceInfo(info: string) {
     root: attributes.root?.replaceAll('\\', '/').replace(/^\/+|\/+$/g, '') ?? '',
     sourcePath: attributes.source?.replaceAll('\\', '/').replace(/^\/+/, '').trim(),
     lineNumbers,
-    highlightedLines
+    highlightedLines,
+    markedText,
+    markedSlices
   };
 }
 
@@ -396,7 +425,7 @@ function extractCodeBlocks(markdown: string, sharedDefinitions: GoToDefinitionRu
       localDirectiveIndex += 1;
     }
     const goToDefinitions = mergeGoToDefinitionRules(sharedDefinitions, localRules);
-    const { language, tab, github, ref, root, sourcePath, lineNumbers, highlightedLines } = parseFenceInfo(opener[2] ?? '');
+    const { language, tab, github, ref, root, sourcePath, lineNumbers, highlightedLines, markedText, markedSlices } = parseFenceInfo(opener[2] ?? '');
     const body: string[] = [];
     i += 1;
     while (i < lines.length) {
@@ -436,6 +465,8 @@ function extractCodeBlocks(markdown: string, sharedDefinitions: GoToDefinitionRu
       kind,
       lineNumbers: kind === 'code' && lineNumbers,
       highlightedLines: kind === 'code' ? highlightedLines : [],
+      markedText: kind === 'code' ? markedText : [],
+      markedSlices: kind === 'code' ? markedSlices : [],
       fileSource: kind === 'files' && github ? { github, ref, root } : undefined,
       sourcePath: kind === 'code' && sourcePath ? sourcePath : undefined,
       goToDefinitions: kind === 'code' ? goToDefinitions.filter((rule) => normalizedCode.includes(rule.value)) : []
@@ -666,8 +697,146 @@ function syntaxHighlightSource(block: CodeBlock) {
   return parseCvoloDiffLines(block.code).map((line) => line.code).join('\n');
 }
 
+
+type TextRange = { start: number; end: number };
+
+function mergeTextRanges(ranges: TextRange[]) {
+  const normalized = ranges
+    .filter((range) => range.end > range.start)
+    .sort((a, b) => a.start - b.start || a.end - b.end);
+  const merged: TextRange[] = [];
+  for (const range of normalized) {
+    const previous = merged.at(-1);
+    if (!previous || range.start > previous.end) merged.push({ ...range });
+    else previous.end = Math.max(previous.end, range.end);
+  }
+  return merged;
+}
+
+function markedRangesForLine(block: CodeBlock, lineNumber: number, sourceLine: string) {
+  const ranges: TextRange[] = [];
+
+  for (const value of block.markedText) {
+    let from = 0;
+    while (from <= sourceLine.length - value.length) {
+      const index = sourceLine.indexOf(value, from);
+      if (index < 0) break;
+      ranges.push({ start: index, end: index + value.length });
+      from = index + Math.max(value.length, 1);
+    }
+  }
+
+  for (const slice of block.markedSlices) {
+    if (slice.line !== lineNumber) continue;
+    const start = Math.min(slice.start, sourceLine.length);
+    const end = Math.min(slice.end, sourceLine.length);
+    if (end > start) ranges.push({ start, end });
+  }
+
+  return mergeTextRanges(ranges);
+}
+
+function markRenderedLine(lineHtml: string, ranges: TextRange[]) {
+  if (!ranges.length) return lineHtml;
+
+  // Shiki escapes source text and may split one logical fragment across token
+  // spans. Process tags separately and wrap only visible text, closing/reopening
+  // <mark> around syntax spans so the generated HTML always remains well nested.
+  const tokens = lineHtml.match(/<[^>]+>|&(?:#\d+|#x[0-9a-f]+|[a-z]+);|[\s\S]/gi) ?? [];
+  let offset = 0;
+  let markOpen = false;
+  let output = '';
+
+  const isMarked = (start: number, end: number) => ranges.some((range) => range.start < end && range.end > start);
+  const visibleLength = (token: string) => {
+    if (token[0] !== '&') return token.length;
+    const numeric = token.match(/^&#(\d+);$/);
+    if (numeric) return String.fromCodePoint(Number(numeric[1])).length;
+    const hex = token.match(/^&#x([0-9a-f]+);$/i);
+    if (hex) return String.fromCodePoint(parseInt(hex[1], 16)).length;
+    return 1;
+  };
+
+  for (const token of tokens) {
+    if (token.startsWith('<')) {
+      if (markOpen) {
+        output += '</mark>';
+        markOpen = false;
+      }
+      output += token;
+      continue;
+    }
+
+    const length = visibleLength(token);
+    const marked = isMarked(offset, offset + length);
+    if (marked && !markOpen) {
+      output += '<mark class="code-fragment-mark">';
+      markOpen = true;
+    } else if (!marked && markOpen) {
+      output += '</mark>';
+      markOpen = false;
+    }
+    output += token;
+    offset += length;
+  }
+
+  if (markOpen) output += '</mark>';
+  return output;
+}
+
+function decorateMarkedFragments(block: CodeBlock, highlightedHtml: string) {
+  if (!block.markedText.length && !block.markedSlices.length) return highlightedHtml;
+
+  const sourceLines = syntaxHighlightSource(block).split('\n');
+  let cursor = 0;
+  let lineNumber = 0;
+  let output = '';
+
+  while (cursor < highlightedHtml.length) {
+    const start = highlightedHtml.indexOf('<span class="line', cursor);
+    if (start < 0) {
+      output += highlightedHtml.slice(cursor);
+      break;
+    }
+
+    output += highlightedHtml.slice(cursor, start);
+    const openingEnd = highlightedHtml.indexOf('>', start);
+    if (openingEnd < 0) {
+      output += highlightedHtml.slice(start);
+      break;
+    }
+
+    const spanPattern = /<\/?span\b[^>]*>/gi;
+    spanPattern.lastIndex = openingEnd + 1;
+    let depth = 1;
+    let end = -1;
+    let match: RegExpExecArray | null;
+    while ((match = spanPattern.exec(highlightedHtml))) {
+      if (/^<\/span/i.test(match[0])) depth -= 1;
+      else depth += 1;
+      if (depth === 0) {
+        end = spanPattern.lastIndex;
+        break;
+      }
+    }
+
+    if (end < 0) {
+      output += highlightedHtml.slice(start);
+      break;
+    }
+
+    lineNumber += 1;
+    const lineHtml = highlightedHtml.slice(start, end);
+    const ranges = markedRangesForLine(block, lineNumber, sourceLines[lineNumber - 1] ?? '');
+    output += markRenderedLine(lineHtml, ranges);
+    cursor = end;
+  }
+
+  return output;
+}
+
 function ensureLineMarkup(block: CodeBlock, highlightedHtml: string) {
-  const needsLineMarkup = block.lineNumbers || block.highlightedLines.length > 0 || /^(?:diff|patch)$/i.test(block.language) || isCvoloDiffLanguage(block.language);
+  const needsLineMarkup = block.lineNumbers || block.highlightedLines.length > 0 || block.markedText.length > 0 || block.markedSlices.length > 0 || /^(?:diff|patch)$/i.test(block.language) || isCvoloDiffLanguage(block.language);
   if (!needsLineMarkup || highlightedHtml.includes('class="line"') || !highlightedHtml.includes('plain-code')) {
     return highlightedHtml;
   }
@@ -770,7 +939,7 @@ function renderCodeFrame(block: CodeBlock, highlightedHtml: string, displayLangu
     `<button class="code-copy" type="button" data-copy-code aria-label="${escapeHtml(t(locale, 'common.copyCode'))}"><span class="code-copy-icon">${copyToolbarIcon()}</span><span data-copy-label>${escapeHtml(t(locale, 'common.copy'))}</span></button>`,
     '</span>',
     '</div>',
-    decorateCodeLines(block, highlightedHtml),
+    decorateMarkedFragments(block, decorateCodeLines(block, highlightedHtml)),
     outputHtml,
     '</div>'
   ].join('');

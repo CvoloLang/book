@@ -744,3 +744,20 @@ html.dark .code-tab-panel .shiki .line.code-line-hunk {
 .dark .code-tab-panel-with-output > .plain-code {
   border-bottom-color: rgb(39 39 42);
 }
+
+/* Inline fragment emphasis inside fenced code blocks. `mark="..."` highlights
+   matching text; `mark-range="line:start:end"` targets exact source ranges. */
+.code-frame .code-fragment-mark,
+.code-tab-panel .code-fragment-mark {
+  color: inherit;
+  background: rgb(250 204 21 / .28);
+  border-radius: .2rem;
+  box-shadow: 0 0 0 1px rgb(202 138 4 / .16);
+  padding: .02em .08em;
+  margin: -.02em -.08em;
+}
+html.dark .code-frame .code-fragment-mark,
+html.dark .code-tab-panel .code-fragment-mark {
+  background: rgb(250 204 21 / .2);
+  box-shadow: 0 0 0 1px rgb(250 204 21 / .18);
+}
