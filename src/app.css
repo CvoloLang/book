@@ -64,6 +64,50 @@ button, input { font: inherit; }
   color: rgb(194 65 12);
 }
 .dark .doc-prose code:not(.shiki code) { border-color: rgb(63 63 70); background: rgb(24 24 27); color: rgb(253 186 116); }
+
+/* Markdown fences show Markdown as source text. Shiki marks link labels with
+   underline decoration by default, which makes a literal `[label](target)`
+   look partially rendered. Keep the source representation visually literal. */
+.code-frame[data-language="markdown"] .shiki span,
+.code-tab-panel[data-language="markdown"] .shiki span {
+  text-decoration: none !important;
+}
+
+.source-reference {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  margin: 0 .04rem;
+  border: 0;
+  border-radius: .38rem;
+  background: transparent;
+  padding: 0;
+  color: inherit !important;
+  text-decoration: none !important;
+  cursor: pointer;
+  font: inherit;
+  vertical-align: baseline;
+}
+.source-reference-label { display: inline-flex; align-items: baseline; }
+.source-reference-icon {
+  display: inline-flex;
+  width: .78rem;
+  height: .78rem;
+  align-items: center;
+  justify-content: center;
+  color: rgb(113 113 122);
+  opacity: .8;
+  transition: color .15s ease, opacity .15s ease, transform .15s ease;
+}
+.source-reference-icon svg { display: block; width: 100%; height: 100%; }
+.source-reference:hover .source-reference-icon,
+.source-reference:focus-visible .source-reference-icon { color: rgb(82 82 91); opacity: 1; transform: translateY(-1px); }
+.dark .source-reference-icon { color: rgb(161 161 170); }
+.dark .source-reference:hover .source-reference-icon,
+.dark .source-reference:focus-visible .source-reference-icon { color: rgb(212 212 216); }
+.source-reference:focus-visible { outline: 2px solid rgb(139 92 246 / .35); outline-offset: 2px; }
+.source-reference:hover code, .source-reference:focus-visible code { border-color: rgb(161 161 170) !important; background: rgb(244 244 245) !important; }
+.dark .source-reference:hover code, .dark .source-reference:focus-visible code { border-color: rgb(82 82 91) !important; background: rgb(39 39 42) !important; }
 .doc-prose hr { border: 0; border-top: 1px solid rgb(228 228 231); margin: 2rem 0; }
 .dark .doc-prose hr { border-color: rgb(39 39 42); }
 
@@ -95,11 +139,38 @@ button, input { font: inherit; }
   background: rgb(250 250 250);
 }
 .dark .code-toolbar { border-color: rgb(39 39 42); background: rgb(24 24 27); }
-.code-language { color: rgb(113 113 122); font: 600 .68rem/1 ui-monospace, SFMono-Regular, Menlo, monospace; text-transform: uppercase; letter-spacing: .08em; }
-.code-copy { border: 0; border-radius: .4rem; background: transparent; color: rgb(82 82 91); cursor: pointer; padding: .3rem .55rem; font-size: .75rem; }
-.code-copy:hover { background: rgb(228 228 231); color: rgb(24 24 27); }
-.dark .code-copy { color: rgb(161 161 170); }
-.dark .code-copy:hover { background: rgb(39 39 42); color: rgb(244 244 245); }
+.code-language { display: inline-flex; height: 100%; align-items: center; gap: .42rem; color: rgb(113 113 122); font: 600 .68rem/1 ui-monospace, SFMono-Regular, Menlo, monospace; text-transform: uppercase; letter-spacing: .08em; }
+.code-language > span:last-child { display: inline-flex; height: 100%; align-items: center; }
+.code-toolbar-icon, .code-copy-icon { display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center; }
+.code-toolbar-icon { width: .9rem; height: .9rem; }
+.code-copy-icon { width: .95rem; height: .95rem; }
+.code-toolbar-icon svg, .code-copy-icon svg { display: block; width: 100%; height: 100%; }
+.code-actions { display: inline-flex; align-items: center; gap: .15rem; }
+.code-source,
+.code-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  border: 0;
+  border-radius: .4rem;
+  background: transparent;
+  color: rgb(82 82 91) !important;
+  text-decoration: none !important;
+  cursor: pointer;
+  padding: .3rem .55rem;
+  font-size: .75rem;
+  line-height: 1;
+}
+.code-source:hover,
+.code-copy:hover { background: rgb(228 228 231); color: rgb(24 24 27) !important; }
+.dark .code-source,
+.dark .code-copy { color: rgb(161 161 170) !important; }
+.dark .code-source:hover,
+.dark .code-copy:hover { background: rgb(39 39 42); color: rgb(244 244 245) !important; }
+.code-source:focus-visible,
+.code-copy:focus-visible { outline: 2px solid rgb(139 92 246 / .35); outline-offset: 1px; }
+.code-source-icon { display: inline-flex; width: .88rem; height: .88rem; align-items: center; justify-content: center; }
+.code-source-icon svg { display: block; width: 100%; height: 100%; }
 .code-frame .shiki { margin: 0; overflow-x: auto; padding: 1rem 1.15rem; background: transparent !important; font: .88rem/1.55 "SFMono-Regular", Consolas, "Liberation Mono", monospace; tab-size: 4; }
 .code-frame .shiki code { display: block; min-width: max-content; }
 .code-frame .plain-code { color: rgb(39 39 42); white-space: pre; }
@@ -115,6 +186,23 @@ html.dark .shiki, html.dark .shiki span {
    individual tokens/lines. The code-frame owns the background instead. */
 html.dark .code-frame .shiki { background: transparent !important; }
 html.dark .code-frame .shiki span { background-color: transparent !important; }
+
+/* Optional source line numbers. Enable per fenced block with `lines`,
+   `lines=true` or `line-numbers=true`. They are CSS counters, so copying code
+   never includes the visual numbers. Output blocks intentionally never use them. */
+.code-line-numbers .shiki code { counter-reset: cvolo-code-line; }
+.code-line-numbers .shiki .line { counter-increment: cvolo-code-line; }
+.code-line-numbers .shiki .line::before {
+  content: counter(cvolo-code-line);
+  display: inline-block;
+  width: 1.45rem;
+  margin-right: .7rem;
+  color: rgb(161 161 170);
+  text-align: right;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.dark .code-line-numbers .shiki .line::before { color: rgb(82 82 91); }
 
 .sidebar-scrollbar { scrollbar-width: thin; scrollbar-color: rgb(212 212 216) transparent; }
 .dark .sidebar-scrollbar { scrollbar-color: rgb(63 63 70) transparent; }
@@ -209,4 +297,450 @@ html {
 
 .doc-prose :is(h2, h3, h4, h5, h6)[id] {
   scroll-margin-top: calc(var(--header-h) + 1.5rem);
+}
+
+/* Markdown extension: adjacent fenced blocks with tab="..." become one
+   accessible tabbed code example. Raw Markdown remains readable in GitHub. */
+.code-tabs {
+  margin: 1.35rem 0;
+  overflow: hidden;
+  border: 1px solid rgb(228 228 231);
+  border-radius: .75rem;
+  background: #fff;
+}
+.dark .code-tabs { border-color: rgb(39 39 42); background: #0d1117; }
+.code-tabs-toolbar {
+  display: flex;
+  min-height: 2.5rem;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: .75rem;
+  border-bottom: 1px solid rgb(228 228 231);
+  background: rgb(250 250 250);
+  padding-right: .45rem;
+}
+.dark .code-tabs-toolbar { border-color: rgb(39 39 42); background: rgb(24 24 27); }
+.code-tab-list {
+  display: flex;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.code-tab-list::-webkit-scrollbar { display: none; }
+.code-tab {
+  position: relative;
+  flex: 0 0 auto;
+  border: 0;
+  background: transparent;
+  padding: 0 .9rem;
+  color: rgb(113 113 122);
+  cursor: pointer;
+  font: 600 .76rem/2.5rem ui-sans-serif, system-ui, sans-serif;
+  transition: color .15s ease, background .15s ease;
+}
+.code-tab:hover { color: rgb(39 39 42); background: rgb(244 244 245); }
+.dark .code-tab { color: rgb(161 161 170); }
+.dark .code-tab:hover { color: rgb(228 228 231); background: rgb(39 39 42 / .55); }
+.code-tab::after {
+  content: '';
+  position: absolute;
+  right: .75rem;
+  bottom: 0;
+  left: .75rem;
+  height: 2px;
+  border-radius: 999px 999px 0 0;
+  background: transparent;
+  transform: scaleX(.45);
+  transition: background .15s ease, transform .18s ease;
+}
+.code-tab.active { color: rgb(109 40 217); }
+.dark .code-tab.active { color: rgb(196 181 253); }
+.code-tab.active::after { background: rgb(124 58 237); transform: scaleX(1); }
+.dark .code-tab.active::after { background: rgb(167 139 250); }
+.code-tabs-toolbar > .code-copy { align-self: center; flex: 0 0 auto; }
+.code-tab-panel[hidden] { display: none; }
+.code-tab-panel .shiki {
+  margin: 0;
+  overflow-x: auto;
+  padding: 1rem 1.15rem;
+  background: transparent !important;
+  font: .88rem/1.55 "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  tab-size: 4;
+}
+.code-tab-panel .shiki code { display: block; min-width: max-content; white-space: pre; }
+html.dark .code-tab-panel .shiki { background: transparent !important; }
+html.dark .code-tab-panel .shiki span { background-color: transparent !important; }
+
+/* Markdown extension: ```files renders an ASCII tree as an interactive file browser
+   while the source remains perfectly readable on GitHub and in editors. */
+.file-tree {
+  margin: 1.35rem 0;
+  overflow-x: auto;
+  border: 1px solid rgb(228 228 231);
+  border-radius: .75rem;
+  background: rgb(250 250 250);
+  padding: .8rem .7rem;
+  color: rgb(63 63 70);
+  font-size: .9rem;
+  line-height: 1.45;
+}
+.dark .file-tree {
+  border-color: rgb(39 39 42);
+  background: rgb(24 24 27 / .62);
+  color: rgb(212 212 216);
+}
+.file-tree-node { min-width: max-content; }
+.file-tree-node > summary { list-style: none; }
+.file-tree-node > summary::-webkit-details-marker { display: none; }
+.file-tree-children { min-width: max-content; transform-origin: top; will-change: height, opacity; }
+.file-tree-row {
+  display: flex;
+  width: 100%;
+  min-width: max-content;
+  align-items: center;
+  gap: .55rem;
+  min-height: 2rem;
+  border: 0;
+  border-radius: .4rem;
+  background: transparent;
+  padding: .2rem .45rem .2rem calc(.45rem + var(--tree-depth) * 1.35rem);
+  color: inherit;
+  text-align: left;
+}
+.file-tree-folder-row,
+.file-tree-source { cursor: pointer; }
+.file-tree-row:hover { background: rgb(244 244 245); }
+.dark .file-tree-row:hover { background: rgb(39 39 42 / .72); }
+.file-tree-root > .file-tree-folder-row { font-weight: 650; color: rgb(39 39 42); }
+.dark .file-tree-root > .file-tree-folder-row { color: rgb(244 244 245); }
+.file-tree-chevron,
+.file-tree-spacer {
+  display: grid;
+  width: .9rem;
+  height: .9rem;
+  flex: 0 0 .9rem;
+  place-items: center;
+}
+.file-tree-chevron { color: rgb(113 113 122); transition: transform .16s ease; }
+.file-tree-chevron svg { width: .85rem; height: .85rem; }
+.file-tree-folder[open] > .file-tree-folder-row .file-tree-chevron { transform: rotate(90deg); }
+.file-tree-folder.is-closing > .file-tree-folder-row .file-tree-chevron { transform: rotate(0deg); }
+.file-tree-icon {
+  display: grid;
+  width: 1.15rem;
+  height: 1.15rem;
+  flex: 0 0 1.15rem;
+  place-items: center;
+  color: rgb(113 113 122);
+}
+.dark .file-tree-icon { color: rgb(161 161 170); }
+.file-tree-icon svg { width: 1.05rem; height: 1.05rem; }
+.file-tree-folder-row .file-tree-icon { color: rgb(124 58 237); }
+.dark .file-tree-folder-row .file-tree-icon { color: rgb(167 139 250); }
+.file-tree-name { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; font-size: .86rem; }
+.file-tree-ellipsis { color: rgb(161 161 170); }
+.file-tree-ellipsis-icon { width: 1.15rem; flex: 0 0 1.15rem; font-size: .65rem; letter-spacing: .04em; text-align: center; }
+.file-tree-open-hint {
+  margin-left: auto;
+  padding-left: 1.5rem;
+  color: rgb(161 161 170);
+  font: 500 .68rem/1 ui-sans-serif, system-ui, sans-serif;
+  opacity: 0;
+  transition: opacity .15s ease, color .15s ease;
+}
+.file-tree-source:hover .file-tree-open-hint,
+.file-tree-source:focus-visible .file-tree-open-hint { opacity: 1; color: rgb(109 40 217); }
+.dark .file-tree-source:hover .file-tree-open-hint,
+.dark .file-tree-source:focus-visible .file-tree-open-hint { color: rgb(196 181 253); }
+.file-tree-source:focus-visible,
+.file-tree-folder-row:focus-visible { outline: 2px solid rgb(139 92 246 / .45); outline-offset: -2px; }
+
+/* On-demand GitHub source viewer used by clickable ```files trees. */
+.source-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  background: rgb(9 9 11 / .72);
+  padding: clamp(.75rem, 3vw, 2rem);
+  backdrop-filter: blur(5px);
+}
+.source-modal {
+  display: flex;
+  width: min(70rem, calc(100vw - 3rem));
+  height: min(48rem, calc(100dvh - 3rem));
+  max-width: 100%;
+  max-height: 100%;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid rgb(228 228 231);
+  border-radius: .9rem;
+  background: white;
+  box-shadow: 0 28px 80px rgb(0 0 0 / .35);
+}
+.dark .source-modal { border-color: rgb(63 63 70); background: rgb(9 9 11); }
+.source-modal-header {
+  display: flex;
+  height: 3.5rem;
+  min-height: 3.5rem;
+  flex: 0 0 3.5rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 1px solid rgb(228 228 231);
+  padding: .65rem .75rem .65rem 1rem;
+  background: rgb(250 250 250);
+}
+.dark .source-modal-header { border-color: rgb(39 39 42); background: rgb(24 24 27); }
+.source-modal-eyebrow { display: flex; align-items: center; gap: .4rem; margin-bottom: .2rem; color: rgb(124 58 237); font-size: .65rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+.dark .source-modal-eyebrow { color: rgb(167 139 250); }
+.source-modal-path { overflow: hidden; color: rgb(39 39 42); font: 600 .78rem/1.35 "SFMono-Regular", Consolas, monospace; text-overflow: ellipsis; white-space: nowrap; }
+.dark .source-modal-path { color: rgb(228 228 231); }
+.source-modal-actions { display: flex; flex: 0 0 auto; align-items: center; gap: .35rem; }
+.source-modal-action,
+.source-modal-close {
+  display: inline-flex;
+  min-height: 2rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgb(228 228 231);
+  border-radius: .45rem;
+  background: white;
+  padding: 0 .7rem;
+  color: rgb(82 82 91);
+  font-size: .72rem;
+  font-weight: 600;
+  text-decoration: none;
+  gap: .4rem;
+}
+.source-modal-close { width: 2rem; padding: 0; font-size: 1.15rem; }
+.source-modal-action:hover,
+.source-modal-close:hover { border-color: rgb(196 181 253); color: rgb(109 40 217); }
+.source-modal-action:disabled { cursor: default; opacity: .45; }
+.dark .source-modal-action,
+.dark .source-modal-close { border-color: rgb(63 63 70); background: rgb(24 24 27); color: rgb(212 212 216); }
+.dark .source-modal-action:hover,
+.dark .source-modal-close:hover { border-color: rgb(109 40 217); color: rgb(196 181 253); }
+.source-modal-body { min-height: 0; flex: 1 1 auto; overflow: auto; background: rgb(250 250 250); outline: 0; scrollbar-width: thin; scrollbar-color: rgb(161 161 170) transparent; }
+.source-modal-body::-webkit-scrollbar { width: 10px; height: 10px; }
+.source-modal-body::-webkit-scrollbar-track { background: transparent; }
+.source-modal-body::-webkit-scrollbar-thumb { border: 2px solid transparent; border-radius: 999px; background: rgb(161 161 170); background-clip: padding-box; }
+.source-modal-body::-webkit-scrollbar-corner { background: transparent; }
+.source-modal-body::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
+.dark .source-modal-body { background: #0d1117; scrollbar-color: rgb(82 82 91) transparent; }
+.dark .source-modal-body::-webkit-scrollbar-thumb { background: rgb(82 82 91); background-clip: padding-box; }
+.source-modal-highlight { min-width: max-content; }
+.source-modal-highlight .shiki {
+  min-width: max-content;
+  margin: 0;
+  border: 0 !important;
+  outline: 0 !important;
+  padding: 1.15rem 1.25rem 1.5rem;
+  background: transparent !important;
+  font: .84rem/1.6 "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  tab-size: 4;
+}
+.source-modal-highlight .shiki code { display: block; min-width: max-content; white-space: pre; }
+.source-modal-highlight .plain-code { color: rgb(39 39 42); }
+.dark .source-modal-highlight .plain-code { color: rgb(228 228 231); }
+html.dark .source-modal-highlight .shiki { background: transparent !important; }
+html.dark .source-modal-highlight .shiki span { background-color: transparent !important; }
+.source-modal-state {
+  display: flex;
+  min-height: 14rem;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .55rem;
+  padding: 2rem;
+  color: rgb(113 113 122);
+  text-align: center;
+}
+.source-modal-state strong { color: rgb(39 39 42); }
+.dark .source-modal-state strong { color: rgb(228 228 231); }
+.source-modal-state a { color: rgb(109 40 217); text-underline-offset: 3px; }
+.dark .source-modal-state a { color: rgb(167 139 250); }
+.source-modal-error { color: rgb(161 98 7); }
+
+@media (max-width: 640px) {
+  .source-modal-backdrop { padding: .5rem; }
+  .source-modal { width: 100%; height: calc(100dvh - 1rem); max-width: none; max-height: none; border-radius: .7rem; }
+  .source-modal-header { align-items: flex-start; }
+  .source-modal-actions { flex-wrap: wrap; justify-content: flex-end; }
+  .source-modal-action { padding-inline: .5rem; }
+  .file-tree-open-hint { display: none; }
+}
+
+/* Markdown extension: a ```output / ```stdout / ```result fence placed right
+   after a code fence becomes the terminal/output area of the same example.
+   The output deliberately shares the code surface instead of introducing a
+   darker nested box, and it never receives source line numbers. */
+.code-frame-with-output > .shiki,
+.code-frame-with-output > .plain-code {
+  border-bottom: 1px solid rgb(228 228 231);
+}
+.dark .code-frame-with-output > .shiki,
+.dark .code-frame-with-output > .plain-code {
+  border-bottom-color: rgb(39 39 42);
+}
+.code-output {
+  background: transparent;
+}
+.code-output-label {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  min-height: 2.2rem;
+  padding: .5rem .85rem;
+  border-bottom: 1px solid rgb(228 228 231);
+  background: rgb(250 250 250);
+  color: rgb(113 113 122);
+  font: 700 .66rem/1 ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+}
+.code-output-label svg { width: 1rem; height: 1rem; flex: 0 0 auto; }
+.dark .code-output-label {
+  border-bottom-color: rgb(39 39 42);
+  background: rgb(24 24 27);
+  color: rgb(161 161 170);
+}
+.code-output pre {
+  margin: 0;
+  overflow-x: auto;
+  padding: .9rem 1.15rem 1rem;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: rgb(39 39 42);
+  font: .88rem/1.55 "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  white-space: pre;
+}
+.dark .code-output pre { color: rgb(228 228 231); }
+.code-output code {
+  display: block;
+  min-width: max-content;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: inherit !important;
+  font: inherit;
+  white-space: pre;
+}
+.doc-prose > .code-output {
+  margin: 1.35rem 0;
+  overflow: hidden;
+  border: 1px solid rgb(228 228 231);
+  border-radius: .75rem;
+  background: #fff;
+}
+.dark .doc-prose > .code-output {
+  border-color: rgb(39 39 42);
+  background: #0d1117;
+}
+
+/* Manual go-to-definition references inside highlighted code. The syntax
+   colours remain owned by Shiki; this only adds an IDE-like affordance. */
+.code-definition-ref {
+  appearance: none;
+  display: inline;
+  margin: 0;
+  border: 0;
+  border-radius: .18rem;
+  background: transparent;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  line-height: inherit;
+  letter-spacing: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color .12s ease, text-decoration-color .12s ease;
+}
+.code-definition-ref:hover {
+  background: rgb(139 92 246 / .09);
+  text-decoration-line: underline;
+  text-decoration-style: solid;
+  text-decoration-thickness: 1px;
+  text-decoration-color: rgb(124 58 237 / .75);
+  text-underline-offset: .2em;
+}
+.dark .code-definition-ref:hover {
+  background: rgb(139 92 246 / .12);
+  text-decoration-color: rgb(196 181 253 / .85);
+}
+.code-definition-ref:focus-visible {
+  outline: 2px solid rgb(139 92 246 / .4);
+  outline-offset: 2px;
+}
+
+/* Code line layout. Line numbers stay close to the source column and begin on
+   the same visual axis as the </> icon in the toolbar instead of reserving a
+   wide gutter. */
+.code-frame .shiki .line,
+.code-tab-panel .shiki .line {
+  display: inline-block;
+  min-width: 100%;
+  box-sizing: border-box;
+}
+.code-frame.code-line-numbers .shiki,
+.code-tab-panel.code-line-numbers .shiki {
+  padding-left: .4rem;
+}
+/* Explicit line emphasis for documentation and focused comparison examples. */
+.code-frame .shiki .line.code-line-highlighted,
+.code-tab-panel .shiki .line.code-line-highlighted {
+  background: rgb(124 58 237 / .07) !important;
+  box-shadow: inset 2px 0 0 rgb(124 58 237 / .55);
+}
+html.dark .code-frame .shiki .line.code-line-highlighted,
+html.dark .code-tab-panel .shiki .line.code-line-highlighted {
+  background: rgb(139 92 246 / .10) !important;
+  box-shadow: inset 2px 0 0 rgb(167 139 250 / .6);
+}
+
+/* Git-style diff fences keep Shiki token colours while giving added/removed
+   lines a clear diff treatment. */
+.code-frame .shiki .line.code-line-added,
+.code-tab-panel .shiki .line.code-line-added {
+  background: rgb(34 197 94 / .10) !important;
+}
+.code-frame .shiki .line.code-line-removed,
+.code-tab-panel .shiki .line.code-line-removed {
+  background: rgb(239 68 68 / .09) !important;
+}
+.code-frame .shiki .line.code-line-hunk,
+.code-tab-panel .shiki .line.code-line-hunk {
+  background: rgb(59 130 246 / .07) !important;
+}
+html.dark .code-frame .shiki .line.code-line-added,
+html.dark .code-tab-panel .shiki .line.code-line-added {
+  background: rgb(34 197 94 / .12) !important;
+}
+html.dark .code-frame .shiki .line.code-line-removed,
+html.dark .code-tab-panel .shiki .line.code-line-removed {
+  background: rgb(239 68 68 / .11) !important;
+}
+html.dark .code-frame .shiki .line.code-line-hunk,
+html.dark .code-tab-panel .shiki .line.code-line-hunk {
+  background: rgb(59 130 246 / .10) !important;
+}
+
+/* diff-cvolo magic comments are removed before Shiki. Added and removed
+   lines reuse the same red/green backgrounds as a regular diff, but there is
+   deliberately no visual + / - gutter: // [!code --] and // [!code ++] are
+   the only diff markers authors write. */
+
+/* A tab can own its own output panel. The active tab therefore represents one
+   complete example: source plus the output produced by that source. */
+.code-tab-panel-with-output > .shiki,
+.code-tab-panel-with-output > .plain-code {
+  border-bottom: 1px solid rgb(228 228 231);
+}
+.dark .code-tab-panel-with-output > .shiki,
+.dark .code-tab-panel-with-output > .plain-code {
+  border-bottom-color: rgb(39 39 42);
 }
