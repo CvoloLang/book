@@ -8,6 +8,7 @@
   import LocaleSelect from './LocaleSelect.svelte';
   import VersionSelect from './VersionSelect.svelte';
   import GitHubLinks from './GitHubLinks.svelte';
+  import { t } from '$lib/i18n';
 
   let { onSearch }: { onSearch: () => void } = $props();
   const manifests = manifestData as Record<string, ManifestGroup[]>;
@@ -50,14 +51,15 @@
         type="button"
         onclick={onSearch}
         class="flex h-9 min-w-9 items-center gap-2 rounded-lg border border-zinc-200 bg-zinc-50 px-2.5 text-sm text-zinc-500 hover:border-zinc-300 hover:text-zinc-800 sm:min-w-52 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:border-zinc-700 dark:hover:text-zinc-100"
-        aria-label="Search documentation"
+        aria-label={t(lang, 'common.searchDocs')}
+        data-open-search="true"
       >
         <svg viewBox="0 0 24 24" class="size-4" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-        <span class="hidden sm:inline">Search docs</span>
+        <span class="hidden sm:inline">{t(lang, 'common.searchDocs')}</span>
         <kbd class="ml-auto hidden rounded border border-zinc-200 bg-white px-1.5 py-0.5 text-[10px] text-zinc-400 sm:inline dark:border-zinc-700 dark:bg-zinc-950">/</kbd>
       </button>
 
-      <button type="button" onclick={toggleTheme} class="grid size-9 place-items-center rounded-lg text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-white" aria-label="Toggle theme">
+      <button type="button" onclick={toggleTheme} class="grid size-9 place-items-center rounded-lg text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-white" aria-label={t(lang, 'common.toggleTheme')}>
         {#if dark}
           <svg viewBox="0 0 24 24" class="size-4.5" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.66 6.34l1.41-1.41"/></svg>
         {:else}

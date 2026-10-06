@@ -3,6 +3,7 @@
   import { ChevronDown, ExternalLink, Github } from '@lucide/svelte';
   import { page } from '$app/stores';
   import siteConfig from '$lib/generated/site-config.json';
+  import { t } from '$lib/i18n';
 
   let open = $state(false);
   let lang = $derived($page.params.lang ?? siteConfig.site.defaultLanguage);
@@ -18,7 +19,7 @@
 {#if links.length > 0}
   <Popover.Root bind:open>
     <Popover.Trigger
-      aria-label="GitHub links"
+      aria-label={t(lang, 'common.githubLinks')}
       title="GitHub"
       class="group flex h-9 items-center gap-1 rounded-lg px-2 text-zinc-500 outline-none transition hover:bg-zinc-100 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-violet-500/25 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-white"
     >

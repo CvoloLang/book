@@ -3,8 +3,10 @@
   import { page } from '$app/stores';
   import Sidebar from '$lib/components/Sidebar.svelte';
   import type { ManifestGroup } from '$lib/docs/types';
+  import { t } from '$lib/i18n';
 
   let { data }: { data: { group: ManifestGroup } } = $props();
+  let lang = $derived($page.params.lang);
 </script>
 
 <svelte:head>
@@ -41,7 +43,7 @@
                 {/if}
               </div>
             {/if}
-            <span class="mt-auto pt-4 text-xs font-medium text-violet-600 opacity-0 transition group-hover:opacity-100 dark:text-violet-400">{$page.params.lang === 'ru' ? 'Открыть →' : 'Open →'}</span>
+            <span class="mt-auto pt-4 text-xs font-medium text-violet-600 opacity-0 transition group-hover:opacity-100 dark:text-violet-400">{t(lang, 'section.open')}</span>
           </a>
         {/each}
       </div>

@@ -3,6 +3,7 @@
   import { page } from '$app/stores';
   import { ArrowLeft, BookOpen, ExternalLink, FileQuestion, Github, Search } from '@lucide/svelte';
   import siteConfig from '$lib/generated/site-config.json';
+  import { t } from '$lib/i18n';
 
   type GitHubLink = {
     id: string;
@@ -13,7 +14,6 @@
 
   let lang = $derived($page.params.lang ?? siteConfig.site.defaultLanguage);
   let version = $derived($page.params.version ?? siteConfig.site.defaultVersion);
-  let isRussian = $derived(lang === 'ru');
   let isNotFound = $derived($page.status === 404);
   let githubLinks = siteConfig.githubLinks as GitHubLink[];
   let documentationRepo = githubLinks.find((link) => link.id === 'documentation');
@@ -21,7 +21,7 @@
   let requestedPath = $derived($page.url.pathname + $page.url.hash);
 
   function openSearch() {
-    document.querySelector<HTMLButtonElement>('[aria-label="Search documentation"]')?.click();
+    document.querySelector<HTMLButtonElement>('[data-open-search]')?.click();
   }
 
   function goBack() {
@@ -31,7 +31,7 @@
 </script>
 
 <svelte:head>
-  <title>{isNotFound ? (isRussian ? 'Страница не найдена' : 'Page not found') : (isRussian ? 'Ошибка' : 'Error')} · Cvolo</title>
+  <title>{t(lang, isNotFound ? 'error.pageNotFoundTitle' : 'error.genericTitle')} · Cvolo</title>
   <meta name="robots" content="noindex" />
 </svelte:head>
 
@@ -41,32 +41,20 @@
       <section>
         <div class="mb-5 inline-flex items-center gap-2 rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-violet-700 dark:border-violet-900/70 dark:bg-violet-950/40 dark:text-violet-300">
           <FileQuestion class="size-3.5" strokeWidth={2} />
-          <span>{$page.status} · {isRussian ? 'Документация' : 'Documentation'}</span>
+          <span>{$page.status} · {t(lang, 'common.documentation')}</span>
         </div>
 
         <h1 class="max-w-3xl text-balance text-4xl font-bold tracking-[-0.035em] text-zinc-950 sm:text-5xl dark:text-white">
-          {#if isNotFound}
-            {isRussian ? 'Этой страницы пока нет.' : 'This page is not here yet.'}
-          {:else}
-            {isRussian ? 'Не удалось открыть страницу.' : 'We could not open this page.'}
-          {/if}
+          {t(lang, isNotFound ? 'error.notFoundHeading' : 'error.genericHeading')}
         </h1>
 
         <p class="mt-5 max-w-2xl text-base leading-7 text-zinc-600 sm:text-lg dark:text-zinc-400">
-          {#if isNotFound}
-            {isRussian
-              ? 'Ссылка могла устареть, страница могла переехать, либо этот материал ещё не добавлен в выбранную версию или язык документации.'
-              : 'The link may be outdated, the page may have moved, or this material may not exist yet for the selected documentation version or language.'}
-          {:else}
-            {isRussian
-              ? 'Произошла ошибка при загрузке документации. Можно вернуться назад или открыть основной раздел.'
-              : 'Something went wrong while loading the documentation. You can go back or return to the main book.'}
-          {/if}
+          {t(lang, isNotFound ? 'error.notFoundDescription' : 'error.genericDescription')}
         </p>
 
         <div class="mt-6 max-w-2xl overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900/50">
           <div class="border-b border-zinc-200 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-zinc-400 dark:border-zinc-800 dark:text-zinc-500">
-            {isRussian ? 'Запрошенный путь' : 'Requested path'}
+            {t(lang, 'error.requestedPath')}
           </div>
           <code class="block overflow-x-auto px-4 py-3 font-mono text-sm text-zinc-700 dark:text-zinc-300">{requestedPath}</code>
         </div>
@@ -77,7 +65,7 @@
             class="inline-flex h-10 items-center gap-2 rounded-lg bg-violet-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-violet-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-950"
           >
             <BookOpen class="size-4" />
-            {isRussian ? 'Открыть учебник' : 'Open the Book'}
+            {t(lang, 'error.openBook')}
           </a>
           <button
             type="button"
@@ -85,7 +73,7 @@
             class="inline-flex h-10 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-4 text-sm font-medium text-zinc-700 transition hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:border-zinc-700 dark:hover:bg-zinc-900"
           >
             <ArrowLeft class="size-4" />
-            {isRussian ? 'Назад' : 'Go back'}
+            {t(lang, 'error.goBack')}
           </button>
           <button
             type="button"
@@ -93,7 +81,7 @@
             class="inline-flex h-10 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-4 text-sm font-medium text-zinc-700 transition hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:border-zinc-700 dark:hover:bg-zinc-900"
           >
             <Search class="size-4" />
-            {isRussian ? 'Поиск по документации' : 'Search docs'}
+            {t(lang, 'common.searchDocs')}
             <kbd class="ml-1 rounded border border-zinc-200 bg-zinc-50 px-1.5 py-0.5 text-[10px] text-zinc-400 dark:border-zinc-700 dark:bg-zinc-900">/</kbd>
           </button>
         </div>
@@ -106,18 +94,10 @@
               <Github class="size-4.5" />
             </div>
             <h2 class="mt-4 text-lg font-semibold tracking-tight text-zinc-950 dark:text-white">
-              {isRussian ? 'Помогите улучшить документацию' : 'Help improve the docs'}
+              {t(lang, 'error.helpTitle')}
             </h2>
             <p class="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-              {#if isNotFound}
-                {isRussian
-                  ? 'Если эта страница должна существовать, можно добавить недостающий Markdown, исправить ссылку или описать проблему через pull request / issue.'
-                  : 'If this page should exist, you can add the missing Markdown, fix the broken link, or report the problem through a pull request or issue.'}
-              {:else}
-                {isRussian
-                  ? 'Нашли проблему в документации? Репозиторий открыт для исправлений и предложений.'
-                  : 'Found a problem in the documentation? The repository is open for fixes and proposals.'}
-              {/if}
+              {t(lang, isNotFound ? 'error.helpNotFound' : 'error.helpGeneric')}
             </p>
           </div>
 
@@ -130,7 +110,7 @@
             >
               <div class="min-w-0 flex-1">
                 <div class="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                  {isRussian ? 'Репозиторий документации' : 'Documentation repository'}
+                  {t(lang, 'error.documentationRepository')}
                 </div>
                 <div class="mt-0.5 truncate text-xs text-zinc-500 dark:text-zinc-500">{documentationRepo.description}</div>
               </div>
@@ -146,7 +126,7 @@
               >
                 <div class="min-w-0 flex-1">
                   <div class="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                    {isRussian ? 'Исходники компилятора' : 'Compiler source'}
+                    {t(lang, 'error.compilerSource')}
                   </div>
                   <div class="mt-0.5 truncate text-xs text-zinc-500 dark:text-zinc-500">{compilerRepo.description}</div>
                 </div>
@@ -159,9 +139,7 @@
     </div>
 
     <div class="mt-14 border-t border-zinc-200 pt-6 text-sm text-zinc-500 dark:border-zinc-800 dark:text-zinc-500">
-      {isRussian
-        ? 'Документация Cvolo развивается вместе с языком. Если нужного материала ещё нет, вклад в Book приветствуется.'
-        : 'Cvolo documentation evolves together with the language. If something is missing, contributions to the Book are welcome.'}
+      {t(lang, 'error.footer')}
     </div>
   </div>
 </main>

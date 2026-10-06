@@ -3,6 +3,7 @@ import path from 'node:path';
 import sourceLinksData from '$lib/generated/source-links.json';
 import anchorsData from '$lib/generated/anchors.json';
 import { escapeHtml, highlightCode } from './highlighter.server';
+import { t, type TranslationKey } from '$lib/i18n';
 
 const sourceLinks = sourceLinksData as unknown as Record<string, Record<string, string>>;
 const anchors = anchorsData as unknown as Record<string, Record<string, Record<string, string>>>;
@@ -48,7 +49,7 @@ function displayTitle(raw: string) {
     .trim();
 }
 
-function injectStableHeadingIds(markdown: string) {
+function injectStableHeadingIds(markdown: string, locale: string) {
   const counts = new Map<string, number>();
   return markdown
     .split('\n')
@@ -65,12 +66,12 @@ function injectStableHeadingIds(markdown: string) {
 
       // Render the visible title as text. This deliberately avoids treating
       // generic notation such as Option<T> as an HTML tag.
-      return `<h${level} id="${id}"><a class="heading-anchor" href="#${id}" aria-label="Link to ${escapeHtml(title)}">#</a>${escapeHtml(title)}</h${level}>`;
+      return `<h${level} id="${id}"><a class="heading-anchor" href="#${id}" aria-label="${escapeHtml(t(locale, 'markdown.linkToHeading', { title }))}">#</a>${escapeHtml(title)}</h${level}>`;
     })
     .join('\n');
 }
 
-function rewriteMarkdownLinks(markdown: string, currentSlug: string, sourcePath: string, contextKey: string) {
+function rewriteMarkdownLinks(markdown: string, currentSlug: string, sourcePath: string, contextKey: string, locale: string) {
 	const contextSourceLinks = sourceLinks[contextKey] ?? {};
 	const contextAnchors = anchors[contextKey] ?? {};
   const sourceDir = path.posix.dirname(sourcePath.replaceAll('\\', '/'));
@@ -97,7 +98,7 @@ function rewriteMarkdownLinks(markdown: string, currentSlug: string, sourcePath:
       ?? contextSourceLinks[`~${looseSourceKey(basename)}`];
 
     if (!targetDoc) {
-      return `<span class="missing-doc-link" title="Referenced Markdown document is not included in the public documentation">${escapeHtml(label)}</span>`;
+      return `<span class="missing-doc-link" title="${escapeHtml(t(locale, 'markdown.missingDocument'))}">${escapeHtml(label)}</span>`;
     }
 
     const targetSlug = fragment ? (contextAnchors[targetDoc]?.[slugify(fragment)] ?? targetDoc) : targetDoc;
@@ -176,15 +177,15 @@ function decorateTables(html: string) {
     .replaceAll('</table>', '</table></div>');
 }
 
-const admonitionLabels: Record<string, string> = {
-  NOTE: 'Примечание',
-  TIP: 'Совет',
-  IMPORTANT: 'Важно',
-  WARNING: 'Предупреждение',
-  CAUTION: 'Осторожно'
+const admonitionLabels: Record<string, TranslationKey> = {
+  NOTE: 'admonition.note',
+  TIP: 'admonition.tip',
+  IMPORTANT: 'admonition.important',
+  WARNING: 'admonition.warning',
+  CAUTION: 'admonition.caution'
 };
 
-function decorateAdmonitions(html: string) {
+function decorateAdmonitions(html: string, locale: string) {
   return html.replace(/<blockquote>([\s\S]*?)<\/blockquote>/g, (whole, inner: string) => {
     const match = inner.match(/^\s*<p>\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*/i);
     if (!match) return whole;
@@ -193,7 +194,7 @@ function decorateAdmonitions(html: string) {
     const content = inner.replace(/^\s*<p>\[!(?:NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*/i, '<p>');
     return [
       `<aside class="admonition admonition-${kind.toLowerCase()}">`,
-      `<div class="admonition-title">${admonitionLabels[kind]}</div>`,
+      `<div class="admonition-title">${escapeHtml(t(locale, admonitionLabels[kind]))}</div>`,
       `<div class="admonition-body">${content}</div>`,
       '</aside>'
     ].join('');
@@ -203,8 +204,9 @@ function decorateAdmonitions(html: string) {
 export async function renderMarkdown(markdown: string, currentSlug: string, sourcePath: string, contextKey: string) {
   if (!markdown.trim()) return '';
 
-  const extracted = extractCodeBlocks(rewriteMarkdownLinks(markdown, currentSlug, sourcePath, contextKey));
-  const markdownWithHeadingIds = injectStableHeadingIds(extracted.markdown);
+  const locale = contextKey.split('/')[1] ?? 'en';
+  const extracted = extractCodeBlocks(rewriteMarkdownLinks(markdown, currentSlug, sourcePath, contextKey, locale));
+  const markdownWithHeadingIds = injectStableHeadingIds(extracted.markdown, locale);
   let html = marked.parse(markdownWithHeadingIds, {
     gfm: true,
     breaks: false
@@ -217,7 +219,7 @@ export async function renderMarkdown(markdown: string, currentSlug: string, sour
       `<div class="code-frame" data-language="${label}">`,
       '<div class="code-toolbar">',
       `<span class="code-language">${label}</span>`,
-      '<button class="code-copy" type="button" data-copy-code aria-label="Copy code">Copy</button>',
+      `<button class="code-copy" type="button" data-copy-code aria-label="${escapeHtml(t(locale, 'common.copyCode'))}">${escapeHtml(t(locale, 'common.copy'))}</button>`,
       '</div>',
       highlighted.html,
       '</div>'
@@ -225,6 +227,6 @@ export async function renderMarkdown(markdown: string, currentSlug: string, sour
     html = html.replace(`<div data-code-placeholder="${block.id}"></div>`, replacement);
   }
 
-  html = decorateAdmonitions(html);
+  html = decorateAdmonitions(html, locale);
   return decorateTables(html);
 }

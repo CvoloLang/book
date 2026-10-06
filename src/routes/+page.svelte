@@ -3,6 +3,7 @@
   import type { ManifestGroup } from '$lib/docs/types';
   import manifestData from '$lib/generated/manifest.json';
   import siteConfig from '$lib/generated/site-config.json';
+  import { t } from '$lib/i18n';
 
   const language = siteConfig.site.defaultLanguage;
   const version = siteConfig.site.defaultVersion;
@@ -15,22 +16,22 @@
 
 <svelte:head>
   <title>{siteConfig.site.title}</title>
-  <meta name="description" content="Cvolo documentation: start with the first Hello World program." />
+  <meta name="description" content={t(language, 'home.metaDescription')} />
 </svelte:head>
 
 <main>
   <section class="border-b border-zinc-200 bg-zinc-50/60 dark:border-zinc-800 dark:bg-zinc-950">
     <div class="mx-auto grid max-w-6xl gap-10 px-6 py-20 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-center sm:py-28">
       <div class="max-w-3xl">
-        <div class="mb-4 text-sm font-semibold text-violet-600 dark:text-violet-400">Cvolo Programming Language</div>
-        <h1 class="text-4xl font-bold tracking-[-0.035em] text-zinc-950 sm:text-6xl dark:text-white">Systems programming with explicit semantics and predictable native code.</h1>
-        <p class="mt-6 max-w-3xl text-lg leading-8 text-zinc-600 dark:text-zinc-400">Cvolo combines C#-style syntax ergonomics with explicit memory semantics, compile-time safety, and native LLVM code generation.</p>
+        <div class="mb-4 text-sm font-semibold text-violet-600 dark:text-violet-400">{t(language, 'home.kicker')}</div>
+        <h1 class="text-4xl font-bold tracking-[-0.035em] text-zinc-950 sm:text-6xl dark:text-white">{t(language, 'home.title')}</h1>
+        <p class="mt-6 max-w-3xl text-lg leading-8 text-zinc-600 dark:text-zinc-400">{t(language, 'home.description')}</p>
         <div class="mt-8 flex flex-wrap gap-3">
-          <a href={`${base}/${language}/${version}/docs/book/`} class="rounded-lg bg-violet-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-violet-600">Start reading</a>
+          <a href={`${base}/${language}/${version}/docs/book/`} class="rounded-lg bg-violet-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-violet-600">{t(language, 'home.startReading')}</a>
         </div>
       </div>
       <div class="mx-auto grid size-64 place-items-center overflow-hidden rounded-3xl border border-zinc-200 bg-[#15151a] shadow-2xl shadow-violet-950/10 dark:border-zinc-800">
-        <img src={`${base}/brand/cvolo-logo.png`} alt="Cvolo logo" class="size-full object-cover" />
+        <img src={`${base}/brand/cvolo-logo.png`} alt={t(language, 'home.logoAlt')} class="size-full object-cover" />
       </div>
     </div>
   </section>

@@ -2,9 +2,10 @@
   import type { TocLink } from '$lib/docs/types';
   import { page } from '$app/stores';
   import { tick } from 'svelte';
+  import { t } from '$lib/i18n';
 
   let { toc }: { toc: TocLink[] } = $props();
-  const isRu = $derived($page.params.lang === 'ru');
+  let lang = $derived($page.params.lang);
 
   // Armarium keeps a set of active TOC entries, not one current heading.
   // We do the same: a section is active while its content intersects the
@@ -228,7 +229,7 @@
 <aside class="sticky top-[calc(var(--header-h)+1.5rem)] text-sm">
   {#if toc.length}
     <h2 class="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-400">
-      {isRu ? 'На этой странице' : 'On this page'}
+      {t(lang, 'toc.onThisPage')}
     </h2>
     <nav
       bind:this={navRef}
