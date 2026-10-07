@@ -4,15 +4,13 @@
   import Sidebar from '$lib/components/Sidebar.svelte';
   import PageToc from '$lib/components/PageToc.svelte';
   import { Copy, ExternalLink, Github, X } from '@lucide/svelte';
-  import manifestData from '$lib/generated/manifest.json';
-  import type { ManifestGroup, TopicPage } from '$lib/docs/types';
+  import type { TopicPage } from '$lib/docs/types';
+  import siteConfig from '$lib/generated/site-config.json';
   import { t } from '$lib/i18n';
 
   let { data }: { data: { topic: TopicPage; html: string } } = $props();
-  const manifests = manifestData as Record<string, ManifestGroup[]>;
   let mobileNav = $state(false);
   let copyReset: number | undefined;
-  let lang = $derived($page.params.lang);
   let sourceOpen = $state(false);
   let sourceLoading = $state(false);
   let sourcePath = $state('');
@@ -21,6 +19,7 @@
   let sourceError = $state('');
   let sourceGithubUrl = $state('');
   let sourceRequest = 0;
+  let lang = $derived($page.params.lang);
   const sourceCache = new Map<string, { code: string; html: string }>();
 
 
@@ -149,11 +148,11 @@
     }
   }
 
-  let groupLabel = $derived.by(() => {
-    const groups = manifests[`${$page.params.version}/${$page.params.lang}`] ?? [];
-    const group = groups.find((item) => item.id === data.topic.groupId);
-    return group?.eyebrow || group?.title || data.topic.breadcrumbs[0]?.title || data.topic.groupId;
-  });
+  function sectionEyebrow(groupId: string, lang: string) {
+    const section = siteConfig.sections.find((item) => item.id === groupId);
+    const labels = section?.labels as Record<string, { eyebrow?: string }> | undefined;
+    return labels?.[lang]?.eyebrow ?? labels?.en?.eyebrow ?? groupId;
+  }
 
   function closeSource() {
     sourceOpen = false;
@@ -327,7 +326,7 @@
   <meta name="description" content={data.topic.excerpt} />
 </svelte:head>
 
-<div class="mx-auto grid max-w-[1600px] grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[280px_minmax(0,1fr)_240px]">
+<div class="mx-auto grid max-w-[1600px] grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[280px_minmax(0,1fr)_280px]">
   <div class="hidden border-r border-zinc-200 lg:block dark:border-zinc-800">
     <div class="sticky top-[var(--header-h)]"><Sidebar /></div>
   </div>
@@ -353,7 +352,7 @@
 
       <header class="mb-8 border-b border-zinc-200 pb-6 dark:border-zinc-800">
         <div class="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-violet-600 dark:text-violet-400">
-          {groupLabel}
+          {sectionEyebrow(data.topic.groupId, $page.params.lang ?? 'en')}
         </div>
         <h1 class="text-balance break-words text-3xl font-bold leading-tight tracking-[-0.025em] text-zinc-950 sm:text-4xl dark:text-white">{data.topic.title}</h1>
       </header>
@@ -395,7 +394,7 @@
     </div>
   </main>
 
-  <div class="hidden px-5 py-8 xl:block">
+  <div class="hidden py-8 pl-5 pr-3 xl:block">
     {#key $page.url.pathname}
       <PageToc toc={data.topic.toc} />
     {/key}
@@ -419,26 +418,26 @@
     <div class="source-modal" role="dialog" aria-modal="true" aria-label={`Source: ${sourcePath}`}>
       <header class="source-modal-header">
         <div class="min-w-0">
-          <div class="source-modal-eyebrow"><Github class="size-3.5" /> <span>{$page.params.lang === 'ru' ? 'Исходник GitHub' : 'GitHub source'}</span></div>
+          <div class="source-modal-eyebrow"><Github class="size-3.5" /> <span>{t(lang, 'source.githubSource')}</span></div>
           <div class="source-modal-path" title={sourcePath}>{sourcePath}</div>
         </div>
         <div class="source-modal-actions">
           {#if sourceGithubUrl}
-            <a class="source-modal-action" href={sourceGithubUrl} target="_blank" rel="noreferrer"><ExternalLink class="size-3.5" /><span>{$page.params.lang === 'ru' ? 'Открыть на GitHub' : 'View on GitHub'}</span></a>
+            <a class="source-modal-action" href={sourceGithubUrl} target="_blank" rel="noreferrer"><ExternalLink class="size-3.5" /><span>{t(lang, 'source.viewOnGithub')}</span></a>
           {/if}
           <button class="source-modal-action" type="button" onclick={copySource} disabled={!sourceCode}><Copy class="size-3.5" /><span>{t(lang, 'common.copy')}</span></button>
-          <button class="source-modal-close" type="button" onclick={closeSource} aria-label={$page.params.lang === 'ru' ? 'Закрыть исходник' : 'Close source viewer'}><X class="size-4" /></button>
+          <button class="source-modal-close" type="button" onclick={closeSource} aria-label={t(lang, 'source.closeViewer')}><X class="size-4" /></button>
         </div>
       </header>
 
       <div class="source-modal-body">
         {#if sourceLoading}
-          <div class="source-modal-state">{$page.params.lang === 'ru' ? 'Загрузка исходника с GitHub…' : 'Loading source from GitHub…'}</div>
+          <div class="source-modal-state">{t(lang, 'source.loading')}</div>
         {:else if sourceError}
           <div class="source-modal-state source-modal-error">
-            <strong>{$page.params.lang === 'ru' ? 'Не удалось загрузить файл.' : 'Could not load this file.'}</strong>
+            <strong>{t(lang, 'source.loadFailed')}</strong>
             <span>{sourceError}</span>
-            {#if sourceGithubUrl}<a href={sourceGithubUrl} target="_blank" rel="noreferrer">{$page.params.lang === 'ru' ? 'Открыть файл на GitHub ↗' : 'Open it on GitHub ↗'}</a>{/if}
+            {#if sourceGithubUrl}<a href={sourceGithubUrl} target="_blank" rel="noreferrer">{t(lang, 'source.openOnGithub')}</a>{/if}
           </div>
         {:else}
           <div class="source-modal-highlight">{@html sourceHtml}</div>

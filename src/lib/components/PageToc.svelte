@@ -2,15 +2,10 @@
   import type { TocLink } from '$lib/docs/types';
   import { page } from '$app/stores';
   import { tick } from 'svelte';
-  import { t } from '$lib/i18n';
 
   let { toc }: { toc: TocLink[] } = $props();
-  let lang = $derived($page.params.lang);
+  const isRu = $derived($page.params.lang === 'ru');
 
-  // Armarium keeps a set of active TOC entries, not one current heading.
-  // We do the same: a section is active while its content intersects the
-  // readable viewport. Parent sections stay active while a nested subsection
-  // is visible, so several entries can be highlighted at the same time.
   let activeIds = $state<string[]>([]);
   let navRef = $state<HTMLElement | null>(null);
   let navContentRef = $state<HTMLElement | null>(null);
@@ -36,52 +31,70 @@
     const link = navRef.querySelector<HTMLElement>(`[data-toc-id="${CSS.escape(primaryId)}"]`);
     if (!link) return;
 
-    const viewportTop = navRef.scrollTop;
-    const viewportBottom = viewportTop + navRef.clientHeight;
-    const itemTop = link.offsetTop;
+    const itemTop = link.offsetTop - navRef.scrollTop;
     const itemBottom = itemTop + link.offsetHeight;
 
-    if (itemTop < viewportTop + 8) {
-      navRef.scrollTo({ top: Math.max(0, itemTop - 8), behavior: 'smooth' });
-    } else if (itemBottom > viewportBottom - 8) {
-      navRef.scrollTo({
-        top: itemBottom - navRef.clientHeight + 8,
-        behavior: 'smooth'
-      });
-    }
+    // Do not chase every heading. Keep a comfortable vertical zone and only
+    // move the TOC when the active item leaves it. This is much calmer on pages
+    // with many short sections.
+    const comfortTop = navRef.clientHeight * 0.18;
+    const comfortBottom = navRef.clientHeight * 0.72;
+
+    if (itemTop >= comfortTop && itemBottom <= comfortBottom) return;
+
+    const targetTop =
+      itemTop < comfortTop
+        ? navRef.clientHeight * 0.22
+        : navRef.clientHeight * 0.42;
+
+    const maxScrollTop = Math.max(0, navRef.scrollHeight - navRef.clientHeight);
+    const nextScrollTop = Math.min(
+      maxScrollTop,
+      Math.max(0, link.offsetTop - targetTop)
+    );
+
+    if (Math.abs(navRef.scrollTop - nextScrollTop) < 4) return;
+
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    navRef.scrollTo({
+      top: nextScrollTop,
+      behavior: reduceMotion ? 'auto' : 'smooth'
+    });
   }
 
   function updateIndicator() {
-    if (!navContentRef || !activeIds.length) {
+    if (!navContentRef || !primaryId) {
       indicatorVisible = false;
       return;
     }
 
-    // Armarium can keep several TOC entries active at once. The indicator
-    // should represent that whole visible section range, not only the last
-    // (primary) item. This also makes adjacent active entries read as one
-    // continuous marker while scrolling.
-    const links = activeIds
-      .map((id) =>
-        navContentRef?.querySelector<HTMLElement>(`[data-toc-id="${CSS.escape(id)}"]`) ?? null
-      )
-      .filter((link): link is HTMLElement => link instanceof HTMLElement);
+    const link = navContentRef.querySelector<HTMLElement>(
+      `[data-toc-id="${CSS.escape(primaryId)}"]`
+    );
 
-    if (!links.length) {
+    if (!link) {
       indicatorVisible = false;
       return;
     }
 
-    const first = links[0];
-    const last = links[links.length - 1];
-    indicatorTop = first.offsetTop;
-    indicatorHeight = Math.max(1, last.offsetTop + last.offsetHeight - first.offsetTop);
+    indicatorTop = link.offsetTop;
+    indicatorHeight = Math.max(1, link.offsetHeight);
     indicatorVisible = true;
   }
 
+
+  function getActivationLine(element: HTMLElement) {
+    const styles = getComputedStyle(element);
+    const margin = Number.parseFloat(styles.scrollMarginTop);
+
+    if (Number.isFinite(margin) && margin > 0) {
+      return margin + 8;
+    }
+
+    return headerOffset() + 32;
+  }
+
   $effect(() => {
-    // Like Armarium's tocState.reload(), rebuild all DOM references when the
-    // rendered article changes rather than keeping state from the old route.
     const pathname = $page.url.pathname;
     const signature = toc.map((item) => `${item.id}:${item.level}`).join('|');
     void pathname;
@@ -105,81 +118,63 @@
         return;
       }
 
-      const article = entries[0].element.closest<HTMLElement>('.doc-prose');
       let frame = 0;
 
-      // The current TOC item is the deepest heading that has crossed the
-      // reading line below the sticky header. Its parent headings remain
-      // active as the hierarchy around that item.
-      //
-      // This is intentionally position-based rather than overlap-based:
-      // short H3 sections should not lose their active state merely because
-      // less than an arbitrary amount of their content is visible.
-      const update = () => {
+      const update = (forcedId?: string) => {
         frame = 0;
 
-        const readingLine = headerOffset() + 24;
-        const atDocumentEnd =
-          window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 2;
+        let primaryIndex = 0;
+        const documentBottom = window.scrollY + window.innerHeight;
+        const pageBottom = document.documentElement.scrollHeight;
+        const nearBottom = documentBottom >= pageBottom - 2;
 
-        let primaryIndex = -1;
+        if (forcedId) {
+          const forcedIndex = entries.findIndex((entry) => entry.item.id === forcedId);
+          if (forcedIndex >= 0) primaryIndex = forcedIndex;
+        } else if (nearBottom) {
+          primaryIndex = entries.length - 1;
+        } else {
+          for (let index = 0; index < entries.length; index += 1) {
+            const entry = entries[index];
+            const activationLine = getActivationLine(entry.element);
 
-        for (let index = 0; index < entries.length; index += 1) {
-          const top = entries[index].element.getBoundingClientRect().top;
-          if (top <= readingLine) primaryIndex = index;
-          else break;
-        }
-
-        // Before the first heading becomes current, keep the first TOC item
-        // selected. At the exact bottom of the article, keep the final item.
-        if (primaryIndex < 0) primaryIndex = 0;
-        if (atDocumentEnd) primaryIndex = entries.length - 1;
-
-        // Find the nearest parent heading of the current item. The violet
-        // indicator is continuous, so every TOC entry covered by that indicator
-        // must use the active colour as well. Otherwise we get a violet line
-        // spanning several rows while only the first and last rows are violet.
-        let rangeStart = primaryIndex;
-        const primaryLevel = entries[primaryIndex].item.level;
-
-        for (let index = primaryIndex - 1; index >= 0; index -= 1) {
-          if (entries[index].item.level < primaryLevel) {
-            rangeStart = index;
-            break;
+            if (entry.element.getBoundingClientRect().top <= activationLine) {
+              primaryIndex = index;
+            } else {
+              break;
+            }
           }
         }
 
-        const nextActive = entries
-          .slice(rangeStart, primaryIndex + 1)
-          .map((entry) => entry.item.id);
-
+        const nextActive = [entries[primaryIndex].item.id];
         if (!sameIds(nextActive, activeIds)) activeIds = nextActive;
       };
 
-      const scheduleUpdate = () => {
-        if (frame) return;
-        frame = requestAnimationFrame(update);
+      const scheduleUpdate = (forcedId?: string) => {
+        if (frame) cancelAnimationFrame(frame);
+        frame = requestAnimationFrame(() => update(forcedId));
       };
 
       const handleHashChange = () => {
-        // The browser performs the actual anchor navigation. We only schedule
-        // a new visibility calculation so activeIds reflects what is on screen.
-        scheduleUpdate();
+        const forcedId = decodeURIComponent(window.location.hash.replace(/^#/, ''));
+        scheduleUpdate(forcedId || undefined);
       };
 
-      const resizeObserver = article ? new ResizeObserver(scheduleUpdate) : null;
-      if (article && resizeObserver) resizeObserver.observe(article);
+      const handleScroll = () => scheduleUpdate();
+      const handleResize = () => scheduleUpdate();
+      const resizeObserver = new ResizeObserver(handleResize);
+      resizeObserver.observe(document.documentElement);
 
       scheduleUpdate();
-      window.addEventListener('scroll', scheduleUpdate, { passive: true });
-      window.addEventListener('resize', scheduleUpdate, { passive: true });
+      window.addEventListener('scroll', handleScroll, { passive: true });
+      window.addEventListener('resize', handleResize, { passive: true });
       window.addEventListener('hashchange', handleHashChange);
 
       cleanup = () => {
         if (frame) cancelAnimationFrame(frame);
-        resizeObserver?.disconnect();
-        window.removeEventListener('scroll', scheduleUpdate);
-        window.removeEventListener('resize', scheduleUpdate);
+        resizeObserver.disconnect();
+        window.removeEventListener('scroll', handleScroll);
+        window.removeEventListener('resize', handleResize);
         window.removeEventListener('hashchange', handleHashChange);
       };
     });
@@ -191,7 +186,6 @@
   });
 
   $effect(() => {
-    // Touch both values so this reruns whenever the active group changes.
     const signature = activeIds.join('|');
     void signature;
 
@@ -205,11 +199,11 @@
 <aside class="sticky top-[calc(var(--header-h)+1.5rem)] text-sm">
   {#if toc.length}
     <h2 class="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-400">
-      {t(lang, 'toc.onThisPage')}
+      {isRu ? 'На этой странице' : 'On this page'}
     </h2>
     <nav
       bind:this={navRef}
-      class="max-h-[calc(100vh-var(--header-h)-5rem)] overflow-y-auto pr-1"
+      class="toc-scroll-clean max-h-[calc(100vh-var(--header-h)-5rem)] overflow-y-auto pr-1"
     >
       <div bind:this={navContentRef} class="relative border-l border-zinc-200 dark:border-zinc-800">
         <span
@@ -218,7 +212,7 @@
           style={`height:${indicatorHeight}px; transform:translateY(${indicatorTop}px); opacity:${indicatorVisible ? 1 : 0}`}
         ></span>
 
-        {#each toc.slice(0, 24) as item}
+        {#each toc as item}
           <a
             href={`#${item.id}`}
             data-toc-id={item.id}
@@ -226,10 +220,23 @@
             class={activeSet.has(item.id)
               ? 'block py-1.5 text-[13px] leading-5 text-violet-600 transition-colors duration-200 dark:text-violet-400'
               : 'block py-1.5 text-[13px] leading-5 text-zinc-500 transition-colors duration-200 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'}
-            style={`padding-left:${0.75 + Math.max(0, item.level - 3) * 0.75}rem`}
+            style={`padding-left:${0.75 + Math.max(0, item.level - 2) * 0.8}rem`}
           >{item.title}</a>
         {/each}
       </div>
     </nav>
   {/if}
 </aside>
+
+<style>
+  .toc-scroll-clean {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .toc-scroll-clean::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none;
+  }
+</style>

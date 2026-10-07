@@ -4,7 +4,6 @@ import sourceLinksData from '$lib/generated/source-links.json';
 import anchorsData from '$lib/generated/anchors.json';
 import siteConfigData from '$lib/generated/site-config.json';
 import { escapeHtml, highlightCode } from './highlighter.server';
-import { t, type TranslationKey } from '$lib/i18n';
 
 const sourceLinks = sourceLinksData as unknown as Record<string, Record<string, string>>;
 const anchors = anchorsData as unknown as Record<string, Record<string, Record<string, string>>>;
@@ -201,7 +200,7 @@ function displayTitle(raw: string) {
     .trim();
 }
 
-function injectStableHeadingIds(markdown: string, locale: string) {
+function injectStableHeadingIds(markdown: string) {
   const counts = new Map<string, number>();
   return markdown
     .split('\n')
@@ -218,12 +217,12 @@ function injectStableHeadingIds(markdown: string, locale: string) {
 
       // Render the visible title as text. This deliberately avoids treating
       // generic notation such as Option<T> as an HTML tag.
-      return `<h${level} id="${id}"><a class="heading-anchor" href="#${id}" aria-label="${escapeHtml(t(locale, 'markdown.linkToHeading', { title }))}">#</a>${escapeHtml(title)}</h${level}>`;
+      return `<h${level} id="${id}"><a class="heading-anchor" href="#${id}" aria-label="Link to ${escapeHtml(title)}">#</a>${escapeHtml(title)}</h${level}>`;
     })
     .join('\n');
 }
 
-function rewriteMarkdownLinks(markdown: string, currentSlug: string, sourcePath: string, contextKey: string, locale: string) {
+function rewriteMarkdownLinks(markdown: string, currentSlug: string, sourcePath: string, contextKey: string) {
   const contextSourceLinks = sourceLinks[contextKey] ?? {};
   const contextAnchors = anchors[contextKey] ?? {};
   const sourceDir = path.posix.dirname(sourcePath.replaceAll('\\', '/'));
@@ -250,7 +249,7 @@ function rewriteMarkdownLinks(markdown: string, currentSlug: string, sourcePath:
       ?? contextSourceLinks[`~${looseSourceKey(basename)}`];
 
     if (!targetDoc) {
-      return `<span class="missing-doc-link" title="${escapeHtml(t(locale, 'markdown.missingDocument'))}">${escapeHtml(label)}</span>`;
+      return `<span class="missing-doc-link" title="Referenced Markdown document is not included in the public documentation">${escapeHtml(label)}</span>`;
     }
 
     const targetSlug = targetDoc;
@@ -272,7 +271,7 @@ type CodeBlock = {
   code: string;
   tab?: string;
   tabGroup?: number;
-  kind: 'code' | 'files' | 'output';
+  kind: 'code' | 'files' | 'input' | 'output';
   lineNumbers: boolean;
   highlightedLines: number[];
   markedText: string[];
@@ -438,19 +437,25 @@ function extractCodeBlocks(markdown: string, sharedDefinitions: GoToDefinitionRu
     const id = `cvolo-code-${blocks.length}`;
     const kind = /^(?:files?|filetree|tree)$/i.test(language)
       ? 'files'
-      : /^(?:output|stdout|result)$/i.test(language)
-        ? 'output'
-        : 'code';
+      : /^(?:input|stdin)$/i.test(language)
+        ? 'input'
+        : /^(?:output|stdout|result)$/i.test(language)
+          ? 'output'
+          : 'code';
 
     let tabGroup: number | undefined;
     const previousBlock = blocks.at(-1);
     if (kind === 'code' && tab) {
       if (activeTabGroup === undefined) activeTabGroup = nextTabGroup++;
       tabGroup = activeTabGroup;
-    } else if (kind === 'output' && activeTabGroup !== undefined && previousBlock?.kind === 'code' && previousBlock.tabGroup === activeTabGroup) {
-      // An output fence immediately following a tabbed code block belongs to
-      // that tab. Keeping the group active also allows the next tabbed code
-      // block to continue the same example: code -> output -> code -> output.
+    } else if (
+      (kind === 'input' || kind === 'output')
+      && activeTabGroup !== undefined
+      && previousBlock?.tabGroup === activeTabGroup
+      && (previousBlock.kind === 'code' || previousBlock.kind === 'input' || previousBlock.kind === 'output')
+    ) {
+      // Terminal fences immediately following a tabbed code block belong to
+      // that tab. This supports code -> input -> output -> code -> ...
       tabGroup = activeTabGroup;
     } else {
       activeTabGroup = undefined;
@@ -458,7 +463,7 @@ function extractCodeBlocks(markdown: string, sharedDefinitions: GoToDefinitionRu
     const normalizedCode = normalizeCodeBlock(body.join('\n'));
     blocks.push({
       id,
-      language: kind === 'files' ? 'files' : kind === 'output' ? 'output' : language,
+      language: kind === 'files' ? 'files' : kind === 'input' ? 'input' : kind === 'output' ? 'output' : language,
       code: normalizedCode,
       tab,
       tabGroup,
@@ -627,12 +632,20 @@ function copyToolbarIcon() {
   return '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="10" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M15 9V7a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>';
 }
 
-function renderOutputBlock(code: string, locale: string) {
-  const label = t(locale, 'common.output');
+function renderTerminalBlock(code: string, kind: 'input' | 'output', contextKey: string) {
+  const language = contextKey.split('/')[1] ?? 'en';
+  const isInput = kind === 'input';
+  const label = isInput
+    ? (language === 'ru' ? 'Ввод' : 'Input')
+    : (language === 'ru' ? 'Вывод' : 'Output');
+  const icon = isInput
+    ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h11M11 8l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><rect x="17.5" y="5" width="3" height="14" rx="1" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>'
+    : '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="m7 9 3 3-3 3M12.5 15h4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
   return [
-    '<div class="code-output">',
-    '<div class="code-output-label">',
-    '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="m7 9 3 3-3 3M12.5 15h4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    `<div class="code-terminal code-${kind}">`,
+    '<div class="code-terminal-label">',
+    icon,
     `<span>${label}</span>`,
     '</div>',
     `<pre><code>${escapeHtml(code)}</code></pre>`,
@@ -920,7 +933,7 @@ function goToDefinitionAttribute(rules: GoToDefinitionRule[]) {
   return ` data-go-to-definitions="${escapeHtml(JSON.stringify(clientRules))}"`;
 }
 
-function renderCodeFrame(block: CodeBlock, highlightedHtml: string, displayLanguage: string, locale: string, outputHtml = '') {
+function renderCodeFrame(block: CodeBlock, highlightedHtml: string, displayLanguage: string, terminalHtml = '') {
   const label = escapeHtml(displayLanguage || 'code');
   const sourceButton = block.sourcePath
     ? sourceFileButton(
@@ -931,29 +944,36 @@ function renderCodeFrame(block: CodeBlock, highlightedHtml: string, displayLangu
       )
     : '';
   return [
-    `<div class="code-frame${outputHtml ? ' code-frame-with-output' : ''}${block.lineNumbers ? ' code-line-numbers' : ''}" data-language="${label}"${goToDefinitionAttribute(block.goToDefinitions)}>`,
+    `<div class="code-frame${terminalHtml ? ' code-frame-with-terminal code-frame-with-output' : ''}${block.lineNumbers ? ' code-line-numbers' : ''}" data-language="${label}"${goToDefinitionAttribute(block.goToDefinitions)}>`,
     '<div class="code-toolbar">',
     `<span class="code-language"><span class="code-toolbar-icon">${codeToolbarIcon()}</span><span>${label}</span></span>`,
     '<span class="code-actions">',
     sourceButton,
-    `<button class="code-copy" type="button" data-copy-code aria-label="${escapeHtml(t(locale, 'common.copyCode'))}"><span class="code-copy-icon">${copyToolbarIcon()}</span><span data-copy-label>${escapeHtml(t(locale, 'common.copy'))}</span></button>`,
+    `<button class="code-copy" type="button" data-copy-code aria-label="Copy code"><span class="code-copy-icon">${copyToolbarIcon()}</span><span data-copy-label>Copy</span></button>`,
     '</span>',
     '</div>',
     decorateMarkedFragments(block, decorateCodeLines(block, highlightedHtml)),
-    outputHtml,
+    terminalHtml,
     '</div>'
   ].join('');
 }
 
-function renderCodeTabs(groupId: number, blocks: CodeBlock[], rendered: Map<string, { html: string; language: string }>, locale: string) {
+function renderCodeTabs(groupId: number, blocks: CodeBlock[], rendered: Map<string, { html: string; language: string }>) {
   const tabsId = `code-tabs-${groupId}`;
   const sources = blocks.filter((block) => block.kind === 'code');
-  const outputFor = new Map<string, CodeBlock>();
+  const terminalFor = new Map<string, CodeBlock[]>();
+  let currentSource: CodeBlock | undefined;
 
-  for (let index = 0; index < blocks.length - 1; index += 1) {
-    const source = blocks[index];
-    const output = blocks[index + 1];
-    if (source.kind === 'code' && output.kind === 'output') outputFor.set(source.id, output);
+  for (const block of blocks) {
+    if (block.kind === 'code') {
+      currentSource = block;
+      continue;
+    }
+    if ((block.kind === 'input' || block.kind === 'output') && currentSource) {
+      const terminal = terminalFor.get(currentSource.id) ?? [];
+      terminal.push(block);
+      terminalFor.set(currentSource.id, terminal);
+    }
   }
 
   const buttons = sources.map((block, index) => {
@@ -963,19 +983,20 @@ function renderCodeTabs(groupId: number, blocks: CodeBlock[], rendered: Map<stri
 
   const panels = sources.map((block, index) => {
     const item = rendered.get(block.id)!;
-    const outputBlock = outputFor.get(block.id);
-    const outputHtml = outputBlock ? rendered.get(outputBlock.id)?.html ?? '' : '';
+    const terminalHtml = (terminalFor.get(block.id) ?? [])
+      .map((terminal) => rendered.get(terminal.id)?.html ?? '')
+      .join('');
     const lineNumberClass = block.lineNumbers ? ' code-line-numbers' : '';
-    const outputClass = outputHtml ? ' code-tab-panel-with-output' : '';
+    const terminalClass = terminalHtml ? ' code-tab-panel-with-terminal code-tab-panel-with-output' : '';
     const panelLanguage = escapeHtml(item.language || block.language || 'code');
-    return `<div class="code-tab-panel${lineNumberClass}${outputClass}" data-language="${panelLanguage}" role="tabpanel" id="${tabsId}-panel-${index}" aria-labelledby="${tabsId}-tab-${index}" data-code-tab-panel data-tab-index="${index}"${goToDefinitionAttribute(block.goToDefinitions)}${index === 0 ? '' : ' hidden'}>${decorateCodeLines(block, item.html)}${outputHtml}</div>`;
+    return `<div class="code-tab-panel${lineNumberClass}${terminalClass}" data-language="${panelLanguage}" role="tabpanel" id="${tabsId}-panel-${index}" aria-labelledby="${tabsId}-tab-${index}" data-code-tab-panel data-tab-index="${index}"${goToDefinitionAttribute(block.goToDefinitions)}${index === 0 ? '' : ' hidden'}>${decorateMarkedFragments(block, decorateCodeLines(block, item.html))}${terminalHtml}</div>`;
   }).join('');
 
   return [
     '<div class="code-tabs" data-code-tabs>',
     '<div class="code-tabs-toolbar">',
     `<div class="code-tab-list" role="tablist" aria-label="Code examples">${buttons}</div>`,
-    `<button class="code-copy" type="button" data-copy-code aria-label="${escapeHtml(t(locale, 'common.copyCode'))}"><span class="code-copy-icon">${copyToolbarIcon()}</span><span data-copy-label>${escapeHtml(t(locale, 'common.copy'))}</span></button>`,
+    `<button class="code-copy" type="button" data-copy-code aria-label="Copy code"><span class="code-copy-icon">${copyToolbarIcon()}</span><span data-copy-label>Copy</span></button>`,
     '</div>',
     `<div class="code-tab-panels">${panels}</div>`,
     '</div>'
@@ -1030,15 +1051,15 @@ function decorateTables(html: string) {
     .replaceAll('</table>', '</table></div>');
 }
 
-const admonitionLabels: Record<string, TranslationKey> = {
-  NOTE: 'admonition.note',
-  TIP: 'admonition.tip',
-  IMPORTANT: 'admonition.important',
-  WARNING: 'admonition.warning',
-  CAUTION: 'admonition.caution'
+const admonitionLabels: Record<string, string> = {
+  NOTE: 'Примечание',
+  TIP: 'Совет',
+  IMPORTANT: 'Важно',
+  WARNING: 'Предупреждение',
+  CAUTION: 'Осторожно'
 };
 
-function decorateAdmonitions(html: string, locale: string) {
+function decorateAdmonitions(html: string) {
   return html.replace(/<blockquote>([\s\S]*?)<\/blockquote>/g, (whole, inner: string) => {
     const match = inner.match(/^\s*<p>\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*/i);
     if (!match) return whole;
@@ -1047,7 +1068,7 @@ function decorateAdmonitions(html: string, locale: string) {
     const content = inner.replace(/^\s*<p>\[!(?:NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*/i, '<p>');
     return [
       `<aside class="admonition admonition-${kind.toLowerCase()}">`,
-      `<div class="admonition-title">${escapeHtml(t(locale, admonitionLabels[kind]))}</div>`,
+      `<div class="admonition-title">${admonitionLabels[kind]}</div>`,
       `<div class="admonition-body">${content}</div>`,
       '</aside>'
     ].join('');
@@ -1056,16 +1077,15 @@ function decorateAdmonitions(html: string, locale: string) {
 
 export async function renderMarkdown(markdown: string, currentSlug: string, sourcePath: string, contextKey: string) {
   if (!markdown.trim()) return '';
-  const locale = contextKey.split('/')[1] ?? 'en';
 
   const directives = extractGoToDefinitionDirectives(markdown);
   const sharedDefinitions = mergeGoToDefinitionRules(
     directives.disableProjectRules ? [] : projectGoToDefinitions,
     directives.documentRules
   );
-  const rewritten = rewriteMarkdownLinks(directives.markdown, currentSlug, sourcePath, contextKey, locale);
+  const rewritten = rewriteMarkdownLinks(directives.markdown, currentSlug, sourcePath, contextKey);
   const extracted = extractCodeBlocks(rewritten, sharedDefinitions, directives.localDirectives);
-  const markdownWithHeadingIds = injectStableHeadingIds(injectSourceReferences(extracted.markdown), locale);
+  const markdownWithHeadingIds = injectStableHeadingIds(injectSourceReferences(extracted.markdown));
   let html = marked.parse(markdownWithHeadingIds, {
     gfm: true,
     breaks: false
@@ -1077,8 +1097,8 @@ export async function renderMarkdown(markdown: string, currentSlug: string, sour
       rendered.set(block.id, { html: renderFileTree(block.code, block.fileSource), language: 'files' });
       continue;
     }
-    if (block.kind === 'output') {
-      rendered.set(block.id, { html: renderOutputBlock(block.code, locale), language: 'output' });
+    if (block.kind === 'input' || block.kind === 'output') {
+      rendered.set(block.id, { html: renderTerminalBlock(block.code, block.kind, contextKey), language: block.kind });
       continue;
     }
     const cvoloDiff = isCvoloDiffLanguage(block.language);
@@ -1105,42 +1125,55 @@ export async function renderMarkdown(markdown: string, currentSlug: string, sour
       .join('\\s*');
     const pattern = new RegExp(placeholders);
     if (pattern.test(html)) {
-      html = html.replace(pattern, renderCodeTabs(groupId, blocks, rendered, locale));
+      html = html.replace(pattern, renderCodeTabs(groupId, blocks, rendered));
       for (const block of blocks) groupedIds.add(block.id);
     }
   }
 
-  // A ```output fence placed directly after a normal code fence is rendered as
-  // one visual example. Raw Markdown stays readable while authors no longer
-  // need an extra "Output:" / "Вывод:" paragraph.
-  for (let index = 1; index < extracted.blocks.length; index += 1) {
-    const output = extracted.blocks[index];
-    const source = extracted.blocks[index - 1];
-    if (output.kind !== 'output' || source.kind !== 'code') continue;
-    if (groupedIds.has(source.id) || groupedIds.has(output.id)) continue;
+  // Consecutive ```input / ```output fences immediately after a normal code
+  // fence are rendered as one visual example.
+  for (let index = 0; index < extracted.blocks.length; index += 1) {
+    const source = extracted.blocks[index];
+    if (source.kind !== 'code' || groupedIds.has(source.id)) continue;
 
-    const sourcePlaceholder = escapeRegExp(`<div data-code-placeholder="${source.id}"></div>`);
-    const outputPlaceholder = escapeRegExp(`<div data-code-placeholder="${output.id}"></div>`);
-    const pattern = new RegExp(`${sourcePlaceholder}\\s*${outputPlaceholder}`);
+    const terminalBlocks: CodeBlock[] = [];
+    let cursor = index + 1;
+    while (cursor < extracted.blocks.length) {
+      const block = extracted.blocks[cursor];
+      if (block.kind !== 'input' && block.kind !== 'output') break;
+      if (groupedIds.has(block.id)) break;
+      terminalBlocks.push(block);
+      cursor += 1;
+    }
+    if (!terminalBlocks.length) continue;
+
+    const placeholders = [source, ...terminalBlocks]
+      .map((block) => `<div data-code-placeholder="${block.id}"></div>`)
+      .map(escapeRegExp)
+      .join('\\s*');
+    const pattern = new RegExp(placeholders);
     if (!pattern.test(html)) continue;
 
     const sourceItem = rendered.get(source.id)!;
-    const outputItem = rendered.get(output.id)!;
-    html = html.replace(pattern, renderCodeFrame(source, sourceItem.html, sourceItem.language, locale, outputItem.html));
+    const terminalHtml = terminalBlocks
+      .map((block) => rendered.get(block.id)?.html ?? '')
+      .join('');
+    html = html.replace(pattern, renderCodeFrame(source, sourceItem.html, sourceItem.language, terminalHtml));
     groupedIds.add(source.id);
-    groupedIds.add(output.id);
+    for (const block of terminalBlocks) groupedIds.add(block.id);
+    index = cursor - 1;
   }
 
   for (const block of extracted.blocks) {
     if (groupedIds.has(block.id)) continue;
     const item = rendered.get(block.id)!;
-    const replacement = block.kind === 'files' || block.kind === 'output'
+    const replacement = block.kind === 'files' || block.kind === 'input' || block.kind === 'output'
       ? item.html
-      : renderCodeFrame(block, item.html, item.language, locale);
+      : renderCodeFrame(block, item.html, item.language);
     html = html.replace(`<div data-code-placeholder="${block.id}"></div>`, replacement);
   }
 
-  html = decorateAdmonitions(html, locale);
+  html = decorateAdmonitions(html);
   html = decorateSourceReferences(html);
   return decorateTables(html);
 }
