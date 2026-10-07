@@ -130,9 +130,9 @@ function extractGoToDefinitionDirectives(markdown: string) {
       continue;
     }
 
-    if (/<DisableGlobalGoToDefinition\b[^>]*\/?>/i.test(line)) {
+    if (/^\s*<DisableGlobalGoToDefinition\b[^>]*\/?>\s*$/i.test(line)) {
       disableProjectRules = true;
-      output.push(line.replace(/<DisableGlobalGoToDefinition\b[^>]*\/?>/gi, ''));
+      output.push(line.replace(/<DisableGlobalGoToDefinition\b[^>]*\/?>/i, ''));
       continue;
     }
 
@@ -142,7 +142,7 @@ function extractGoToDefinitionDirectives(markdown: string) {
       continue;
     }
 
-    if (!/<GoToDefinition\b/i.test(line)) {
+    if (!/^\s*<GoToDefinition\b/i.test(line)) {
       output.push(line);
       continue;
     }
@@ -310,6 +310,10 @@ type CodeBlock = {
   sourcePath?: string;
   goToDefinitions: GoToDefinitionRule[];
 };
+
+function codePlaceholder(id: string) {
+  return `<!-- code-placeholder:${id} -->`;
+}
 
 function normalizeCodeBlock(code: string) {
   const lines = code.replace(/\r\n/g, '\n').split('\n');
@@ -508,7 +512,7 @@ function extractCodeBlocks(markdown: string, sharedDefinitions: GoToDefinitionRu
       sourcePath: kind === 'code' && sourcePath ? sourcePath : undefined,
       goToDefinitions: kind === 'code' ? goToDefinitions.filter((rule) => normalizedCode.includes(rule.value)) : []
     });
-    output.push(`<div data-code-placeholder="${id}"></div>`);
+    output.push(codePlaceholder(id));
   }
 
   return { markdown: output.join('\n'), blocks };
@@ -1164,7 +1168,7 @@ export async function renderMarkdown(markdown: string, currentSlug: string, sour
   const groupedIds = new Set<string>();
   for (const [groupId, blocks] of tabGroups) {
     const placeholders = blocks
-      .map((block) => `<div data-code-placeholder="${block.id}"></div>`)
+      .map((block) => codePlaceholder(block.id))
       .map(escapeRegExp)
       .join('\\s*');
     const pattern = new RegExp(placeholders);
@@ -1192,7 +1196,7 @@ export async function renderMarkdown(markdown: string, currentSlug: string, sour
     if (!terminalBlocks.length) continue;
 
     const placeholders = [source, ...terminalBlocks]
-      .map((block) => `<div data-code-placeholder="${block.id}"></div>`)
+      .map((block) => codePlaceholder(block.id))
       .map(escapeRegExp)
       .join('\\s*');
     const pattern = new RegExp(placeholders);
@@ -1214,7 +1218,7 @@ export async function renderMarkdown(markdown: string, currentSlug: string, sour
     const replacement = block.kind === 'files' || block.kind === 'input' || block.kind === 'output'
       ? item.html
       : renderCodeFrame(block, item.html, item.language);
-    html = html.replace(`<div data-code-placeholder="${block.id}"></div>`, replacement);
+    html = html.replace(codePlaceholder(block.id), replacement);
   }
 
   html = decorateAdmonitions(html);
