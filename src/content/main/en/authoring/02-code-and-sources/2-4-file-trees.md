@@ -1,4 +1,4 @@
-# 1.4 File trees
+# 2.4 File trees
 
 When an article explains repository structure or where libraries live, a regular `text` block technically works, but it does not communicate hierarchy very well. For these examples, use a fenced block with the `files` identifier: Cvolo Docs renders it as an interactive tree with file and folder icons, and directories can be expanded and collapsed.
 

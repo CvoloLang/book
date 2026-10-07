@@ -1,4 +1,4 @@
-# 1.7 Diff and highlighting
+# 2.2 Diff and highlighting
 
 There are situations where an article needs to show a small code change immediately or draw the reader's attention to only specific lines and fragments. Cvolo Docs provides several separate mechanisms for this: `diff` and `diff-cvolo` for comparing changes, `highlight` for highlighting whole lines, and `mark` and `mark-range` for highlighting individual fragments within a line.
 

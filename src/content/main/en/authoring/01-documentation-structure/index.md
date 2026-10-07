@@ -1,10 +1,10 @@
-# How to write Cvolo documentation
+# Documentation structure
 
 Cvolo documentation is designed so that authors work with ordinary Markdown files most of the time rather than site components.
 
-A page should remain readable directly on GitHub, while the built site gives Markdown additional capabilities: Cvolo syntax highlighting, combined code + output blocks, tabs, interactive file trees, source browsing, and manual Go To Definition.
+A page should remain readable directly on GitHub, while the built site uses the content tree and locale folders to build routes, navigation, and translations.
 
-This section describes the authoring workflow: how to organize content, how to format examples, and when to use renderer features.
+This chapter covers the documentation structure: where pages live, how chapters list their pages, and how localized files mirror each other.
 
 ## Where to start
 
@@ -13,26 +13,17 @@ If you are adding a new page, first decide which section and chapter it belongs 
 What comes next depends on the task:
 
 - for a regular article, a Markdown file with `# H1` and an entry in `chapter.toml` is enough;
-- for examples with output, use `output`;
-- for alternative variants, use `tab`;
-- for project structure, use `files`;
-- for source links, use `source` and `GoToDefinition`.
+- for a translated article, keep the same chapter and page slug in each locale;
+- for renderer-specific code features, use the next chapter, "Code and sources".
 
 Renderer-specific features should be used only when they genuinely help the explanation. They do not replace prose: an example should still be understandable without knowing how the site works internally.
 
 ## What is covered next
 
-The following topics are covered in order:
+The following topics are covered in this chapter:
 
 - the structure of sections, chapters, and pages;
-- code blocks and program output;
-- tabs;
-- file trees;
-- source links;
-- Go To Definition;
-- documentation localization;
-- comparing code changes;
-- highlighting lines and individual code fragments.
+- documentation localization.
 
 After changing documentation content, it is useful to run:
 

@@ -1,4 +1,4 @@
-# 1.3 Code tabs
+# 2.3 Code tabs
 
 Some examples are easier to explain by showing several code variants in one place: for example, source syntax and lowering, two versions of an API, or the same idea in different languages. Cvolo Docs combines consecutive fenced blocks with `tab="..."` into a single tabbed component.
 

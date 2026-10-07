@@ -1,4 +1,4 @@
-# 1.6 Documentation localization
+# 1.2 Documentation localization
 
 Localization in Cvolo Docs is built around a shared page structure. The English and Russian versions of the same page use the same relative path and slug, while the Markdown content itself is translated: headings, explanations, and, when needed, textual data in examples.
 

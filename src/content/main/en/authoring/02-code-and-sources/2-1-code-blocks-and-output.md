@@ -1,4 +1,4 @@
-# 1.2 Code blocks, program input, and output
+# 2.1 Code blocks, program input, and output
 
 Code examples are a central part of technical documentation. In Cvolo Docs they remain ordinary fenced Markdown blocks, while the site adds syntax highlighting, a language label, Copy, optional line numbers, and dedicated styling for program input and output.
 

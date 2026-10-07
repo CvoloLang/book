@@ -1,4 +1,4 @@
-# 1.5 Source links and Go To Definition
+# 2.5 Source links and Go To Definition
 
 Sometimes documentation needs to show more than the public behavior of a type or function. For Base SDK, `System`, compiler-known attributes, and technical sections, it can be useful to give readers a quick path to the actual implementation. Cvolo Docs supports several levels of source navigation: an inline source link, a **Source** button for an entire code block, and manual Go To Definition for individual expressions inside code.
 
