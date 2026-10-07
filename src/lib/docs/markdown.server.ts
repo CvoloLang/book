@@ -89,20 +89,43 @@ function extractGoToDefinitionDirectives(markdown: string) {
   const localDirectives: LocalGoToDefinitionDirective[] = [];
   let disableProjectRules = false;
   const lines = markdown.replace(/\r\n/g, '\n').split('\n');
+  const fencedLines = new Set<number>();
   const output: string[] = [];
   let fence: { char: string; len: number } | undefined;
 
   for (let index = 0; index < lines.length; index += 1) {
+    const marker = lines[index].match(/^\s*(`{3,}|~{3,})/)?.[1];
+    if (fence) {
+      fencedLines.add(index);
+      if (marker && marker[0] === fence.char && marker.length >= fence.len) fence = undefined;
+      continue;
+    }
+    if (marker) {
+      fencedLines.add(index);
+      fence = { char: marker[0], len: marker.length };
+    }
+  }
+
+  fence = undefined;
+
+  for (let index = 0; index < lines.length; index += 1) {
     const line = lines[index];
-    const fenceMatch = line.match(/^\s*(`{3,}|~{3,})/);
-    if (fenceMatch) {
-      const marker = fenceMatch[1];
-      if (!fence) fence = { char: marker[0], len: marker.length };
-      else if (marker[0] === fence.char && marker.length >= fence.len) fence = undefined;
+    if (fencedLines.has(index)) {
       output.push(line);
       continue;
     }
+
+    const fenceMatch = line.match(/^\s*(`{3,}|~{3,})/);
     if (fence) {
+      const marker = fenceMatch?.[1];
+      if (marker && marker[0] === fence.char && marker.length >= fence.len) fence = undefined;
+      output.push(line);
+      continue;
+    }
+
+    if (fenceMatch) {
+      const marker = fenceMatch[1];
+      fence = { char: marker[0], len: marker.length };
       output.push(line);
       continue;
     }
@@ -110,6 +133,12 @@ function extractGoToDefinitionDirectives(markdown: string) {
     if (/<DisableGlobalGoToDefinition\b[^>]*\/?>/i.test(line)) {
       disableProjectRules = true;
       output.push(line.replace(/<DisableGlobalGoToDefinition\b[^>]*\/?>/gi, ''));
+      continue;
+    }
+
+    const previousLine = index > 0 ? lines[index - 1] : '';
+    if (/^\s*(`{3,}|~{3,})/.test(previousLine)) {
+      output.push(line);
       continue;
     }
 
@@ -267,6 +296,7 @@ type FileTreeSource = {
 
 type CodeBlock = {
   id: string;
+  sourceLine: number;
   language: string;
   code: string;
   tab?: string;
@@ -418,6 +448,7 @@ function extractCodeBlocks(markdown: string, sharedDefinitions: GoToDefinitionRu
     }
 
     const marker = opener[1];
+    const sourceLine = output.length;
     const localRules: GoToDefinitionRule[] = [];
     while (localDirectiveIndex < localDirectives.length && localDirectives[localDirectiveIndex].line < i) {
       localRules.push(...localDirectives[localDirectiveIndex].rules);
@@ -463,6 +494,7 @@ function extractCodeBlocks(markdown: string, sharedDefinitions: GoToDefinitionRu
     const normalizedCode = normalizeCodeBlock(body.join('\n'));
     blocks.push({
       id,
+      sourceLine,
       language: kind === 'files' ? 'files' : kind === 'input' ? 'input' : kind === 'output' ? 'output' : language,
       code: normalizedCode,
       tab,
@@ -1078,13 +1110,25 @@ function decorateAdmonitions(html: string) {
 export async function renderMarkdown(markdown: string, currentSlug: string, sourcePath: string, contextKey: string) {
   if (!markdown.trim()) return '';
 
-  const directives = extractGoToDefinitionDirectives(markdown);
+  const initiallyExtracted = extractCodeBlocks(markdown, [], []);
+  const directives = extractGoToDefinitionDirectives(initiallyExtracted.markdown);
   const sharedDefinitions = mergeGoToDefinitionRules(
     directives.disableProjectRules ? [] : projectGoToDefinitions,
     directives.documentRules
   );
   const rewritten = rewriteMarkdownLinks(directives.markdown, currentSlug, sourcePath, contextKey);
-  const extracted = extractCodeBlocks(rewritten, sharedDefinitions, directives.localDirectives);
+  const extracted = { markdown: rewritten, blocks: initiallyExtracted.blocks };
+  let localDirectiveIndex = 0;
+  for (const block of extracted.blocks) {
+    if (block.kind !== 'code') continue;
+    const localRules: GoToDefinitionRule[] = [];
+    while (localDirectiveIndex < directives.localDirectives.length && directives.localDirectives[localDirectiveIndex].line < block.sourceLine) {
+      localRules.push(...directives.localDirectives[localDirectiveIndex].rules);
+      localDirectiveIndex += 1;
+    }
+    const goToDefinitions = mergeGoToDefinitionRules(sharedDefinitions, localRules);
+    block.goToDefinitions = goToDefinitions.filter((rule) => block.code.includes(rule.value));
+  }
   const markdownWithHeadingIds = injectStableHeadingIds(injectSourceReferences(extracted.markdown));
   let html = marked.parse(markdownWithHeadingIds, {
     gfm: true,
