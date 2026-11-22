@@ -174,4 +174,4 @@ int main()
 
 Before the loop starts, `total` is `0`. On each iteration, the current value of `number` is added to it. The running totals are `1`, `3`, `6`, `10`, and `15`. After the fifth iteration, `number` becomes `6`, the condition `number <= 5` evaluates to false, and the program prints the result.
 
-In this way, `for` and `while` let us execute the same instructions repeatedly without writing them out again in the source code. In the next section, we'll look at `foreach`, which is used to iterate over the elements of arrays and other sequences.
+In this way, `for` and `while` let us execute the same instructions repeatedly without writing them out again in the source code. In the next section, we'll look at `break` and `continue`, which let us exit a loop early or move to its next iteration.
