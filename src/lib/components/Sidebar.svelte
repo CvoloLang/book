@@ -62,7 +62,7 @@
         <svg viewBox="0 0 24 24" class={['size-3.5 transition-transform', isExpanded(node) ? 'rotate-90' : ''].join(' ')} fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6" /></svg>
       </button>
     {/if}
-    <a href={`${base}/${$page.params.lang}/${$page.params.version}/docs/${node.slug}/`} onclick={() => { if (node.children.length) toggleBranch(node.slug); onNavigate?.(); }} class={['min-w-0 flex-1 rounded-md py-1.5 pr-2 text-[13px] leading-5 transition-colors',depth===0?'font-medium':'',activeSlug===node.slug?'bg-violet-50 text-violet-800 dark:bg-violet-950/40 dark:text-violet-300':'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-950 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-zinc-100'].join(' ')} style={`padding-left:${node.children.length ? 0.25 : 0.5+depth*0.75}rem`}>{node.title}</a>
+    <a href={`${base}/${$page.params.lang}/${$page.params.version}/docs/${node.slug}/`} onclick={() => { if (node.children.length && (activeSlug === node.slug || !isExpanded(node))) toggleBranch(node.slug); onNavigate?.(); }} class={['min-w-0 flex-1 rounded-md py-1.5 pr-2 text-[13px] leading-5 transition-colors',depth===0?'font-medium':'',activeSlug===node.slug?'bg-violet-50 text-violet-800 dark:bg-violet-950/40 dark:text-violet-300':'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-950 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-zinc-100'].join(' ')} style={`padding-left:${node.children.length ? 0.25 : 0.5+depth*0.75}rem`}>{node.title}</a>
   </div>
   {#if node.children.length && isExpanded(node)}
     <ul class="mt-0.5 border-l border-zinc-200 dark:border-zinc-800" style={`margin-left:${0.75+depth*0.75}rem`}>
