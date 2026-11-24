@@ -1,17 +1,45 @@
-# Cvolo Docs
+# 🦅 Cvolo Documentation
 
-Official documentation site for the Cvolo programming language.
+[![Documentation](https://img.shields.io/badge/Documentation-Read_Online-007ACC?logo=readthedocs)](https://cvololang.github.io/book/)
+[![Svelte 5](https://img.shields.io/badge/Svelte-5-FF3E00?logo=svelte)](https://svelte.dev/)
+[![SvelteKit](https://img.shields.io/badge/SvelteKit-2-FF3E00?logo=svelte)](https://svelte.dev/docs/kit)
+[![GitHub Pages](https://img.shields.io/badge/Deployment-GitHub_Pages-222222?logo=github)](https://cvololang.github.io/book/)
 
-Built with Svelte 5, SvelteKit, Tailwind CSS 4, Bits UI and Shiki. The production site is prerendered as static files and can be deployed to GitHub Pages.
+**Cvolo Docs** is the official documentation website for the [Cvolo programming language](https://github.com/IgorShaposhnikov/Cvolo). It provides a versioned guide to the language, examples written in Cvolo, and reference material for documentation contributors.
 
-## Start locally
+## 🌍 Supported Languages
+
+Select a language to browse its complete localization directory:
+
+| Language | Native name |
+| --- | --- |
+| [English](src/content/main/en/) | English |
+| [Russian](src/content/main/ru/) | Русский |
+
+---
+
+> [!NOTE]
+> The `main` documentation version currently describes the language under active development. The compiler and the documentation may evolve together.
+
+---
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- [Node.js](https://nodejs.org/) 22.12 or later
+- npm
+
+### Run locally
 
 ```bash
-npm install
+git clone https://github.com/CvoloLang/book.git
+cd book
+npm ci
 npm run dev
 ```
 
-Useful checks:
+### Build and validate
 
 ```bash
 npm run docs:build
@@ -20,94 +48,69 @@ npm run check
 npm run build
 ```
 
-## Content model
+`docs:build` generates the navigation, routes, and search index from the source content. `docs:verify` checks the generated documentation model; `check` runs Svelte and TypeScript checks; `build` produces the static website.
 
-Human-maintained documentation lives in:
+---
 
-```text
-src/content/<version>/<language>/<section>/
-```
+## 🗂 Documentation Structure
 
-Current public section:
-
-- **Book** — the minimal public Hello World page
-
-Translated pages use language-neutral filenames and routes. For example:
+Documentation content is maintained in Markdown, organized by version, language, and section:
 
 ```text
-/en/main/docs/book/01-introduction/hello-world/
-/ru/main/docs/book/01-introduction/hello-world/
-```
+src/content/
+└── <version>/
+    └── <language>/
+        ├── book/
+        └── authoring/
 
-Changing the locale therefore changes only the locale segment when the translation exists.
-
-## TOML configuration
-
-Site structure is configured by hand in TOML:
-
-```text
 config/
 ├── book.toml
 └── versions.toml
 ```
 
-`book.toml` owns site metadata, supported languages, top-level documentation sections and the GitHub links shown in the header menu. `versions.toml` owns the documentation versions shown in the version selector.
+- **`book/`** contains the language tutorial, organized into numbered chapters.
+- **`authoring/`** explains how to write and format documentation.
+- **`config/book.toml`** defines site metadata, languages, sections, and header links.
+- **`config/versions.toml`** defines the documentation versions available in the version selector.
+- **`chapter.toml`** files define page order within individual chapters.
 
-Do not edit generated JSON by hand. `npm run docs:build` derives navigation, routes, search data and UI configuration from TOML plus Markdown:
-
-```text
-src/lib/generated/*.json
-static/search-index.json
-```
-
-These generated files are intentionally ignored by Git and are recreated before development/build commands run.
-
-GitHub destinations are configured without touching Svelte code. Add or edit `[[github_links]]` entries in `config/book.toml`:
-
-```toml
-[[github_links]]
-id = "compiler"
-url = "https://github.com/IgorShaposhnikov/Cvolo/tree/master"
-label_en = "Cvolo compiler"
-label_ru = "Компилятор Cvolo"
-description = "IgorShaposhnikov/Cvolo"
-```
-
-## Code blocks
-
-Fenced Markdown code blocks are normalized before highlighting: surrounding blank lines are removed and common Markdown indentation is dedented while internal Cvolo indentation is preserved. Cvolo highlighting uses the bundled TextMate grammar through Shiki.
-
-## Versions
-
-`main` is currently the development documentation version. Stable releases can later be added to `config/versions.toml` and backed by matching content snapshots under `src/content/<version>/...`.
-
-## Deployment
-
-This repository is the documentation site only. On GitHub Pages it deploys as a project site at:
+Translated pages share language-neutral filenames. For example, every available translation of `4-4-composition.md` uses the path:
 
 ```text
-https://cvololang.github.io/book/
+src/content/main/<language>/book/04-types/4-4-composition.md
 ```
 
-The landing/website should live in a separate `CvoloLang/cvololang.github.io` repository, which GitHub Pages serves at:
+Switching languages preserves the current page whenever a translation exists.
 
-```text
-https://cvololang.github.io/
-```
+---
 
-When a custom domain is available, point the landing site at the apex domain and this docs site at a docs subdomain, for example:
+## ✍️ Contributing
 
-```text
-https://cvololang.org/
-https://docs.cvololang.org/
-```
+Contributions, corrections, and translations are welcome.
 
-To deploy this repository at a custom docs domain, set the repository variable `DOCS_CUSTOM_DOMAIN` to the desired hostname, for example `docs.cvololang.org`. The Pages workflow will build without the `/book` base path and write the matching `CNAME` file into the static output.
+1. Edit the Markdown source under `src/content/`.
+2. Keep available translations in sync when editing a page.
+3. Add new pages to the corresponding `chapter.toml` file for each available translation.
+4. Run `npm run docs:verify` and `npm run check` before submitting a pull request.
 
-## Full development docs
+See the **Authoring** section on the [documentation website](https://cvololang.github.io/book/) for examples of code tabs, highlighting, diffs, and other supported formatting.
 
-The broader in-progress documentation set is preserved on the `dev` branch. `master` is intentionally kept small for the first public GitHub Pages deployment.
+Do not edit generated files under `src/lib/generated/` or `static/search-index.json` by hand. They are regenerated from the source Markdown and TOML configuration.
 
-## Future library documentation
+---
 
-External Toolkit/community library documentation is intentionally not part of the first public deployment. The planned model is a reviewed TOML registry in this repository, while each registered library keeps its own Markdown, languages, versions and compiler-compatibility metadata in the library repository. GitHub Actions can fetch those approved repositories during the static site build.
+## 🌐 Deployment
+
+The documentation website is published through GitHub Pages:
+
+**https://cvololang.github.io/book/**
+
+The [Pages workflow](.github/workflows/pages.yml) builds and deploys the static site when changes are pushed to `master`.
+
+For a custom domain, set the repository variable `DOCS_CUSTOM_DOMAIN` to the desired hostname. The workflow will remove the `/book` base path and generate the matching `CNAME`.
+
+---
+
+## 🔗 Related Project
+
+- **[Cvolo Compiler](https://github.com/IgorShaposhnikov/Cvolo)** - source code and development of the programming language.
