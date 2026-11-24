@@ -183,6 +183,6 @@ Union variants can contain not only built-in types (`int`, `string`, and others)
 
 ## What's Next
 
-We've now explored structures, enumerations, and unions. In the next article, we'll look at **generic types**, which let one declaration work with different data types.
+We've explored structures, enums, and unions. In the next article, [4.4, "Type Composition"](4-4-composition.md), we'll see how to use these types together.
 
 Later, we'll return to `union` through `Option<T>` and `Result<T, E>` from the language's `Base` foundation. These types represent the presence or absence of a value and a successful result or an error, respectively.

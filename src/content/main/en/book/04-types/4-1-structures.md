@@ -90,7 +90,7 @@ var Point point(X: 10, Y: 20);
 
 Here, the type `Point` appears only once, followed by field names and values inside parentheses. **Only `:` is supported in this form.** It resembles a call with named arguments (`X: 10`, `Y: 20`), but the structure's fields are initialized directly, without invoking a constructor.
 
-Constructors provide another way to define an instance's initial state. Their declaration and use are covered in [4.10, “Constructors”](4-10-constructors.md).
+Constructors provide another way to define an instance's initial state. Their declaration and use are covered in [4.11, “Constructors”](4-11-constructors.md).
 
 ## Accessing Fields
 
@@ -134,7 +134,7 @@ val Point origin = Point
 origin.X = 30; // Error: modifying a field through val is forbidden.
 ```
 
-Value passing, mutability, and references are covered in [4.5, “Ownership, Copying, and Moving”](4-5-ownership.md) and [4.6, “References and Borrowing”](4-6-references.md).
+Value passing, mutability, and references are covered in [4.6, “Ownership, Copying, and Moving”](4-6-ownership.md) and [4.7, “References and Borrowing”](4-7-references.md).
 
 ## What's Next
 

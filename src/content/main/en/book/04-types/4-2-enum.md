@@ -259,7 +259,7 @@ Additional rules apply to `[Flags]`:
 
 A `switch` over `[Flags]` does not have to list every variant because flags can be combined. However, if no branch matches at runtime and there is no `default`, the program terminates abnormally. A fallback branch is therefore particularly useful here.
 
-The general rules for applying attributes will be covered in a separate [article, "Attributes"](4-15-attributes.md).
+The general rules for applying attributes will be covered in a separate [article 4.16, "Attributes"](4-16-attributes.md).
 
 ## Enumerations with `[NonExhaustive]`
 

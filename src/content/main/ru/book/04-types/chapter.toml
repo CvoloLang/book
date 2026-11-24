@@ -1,2 +1,2 @@
 order = 4
-pages = ["4-1-structures", "4-2-enum", "4-3-union"]
+pages = ["4-1-structures", "4-2-enum", "4-3-union", "4-4-composition", "4-5-generics"]
