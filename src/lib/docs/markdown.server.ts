@@ -1056,7 +1056,7 @@ function injectSourceReferences(markdown: string) {
   // like ordinary inline code without any click behavior. Code fences have
   // already been extracted at this point, so this never touches source code.
   return markdown.replace(
-    /\[((?:`[^`]*`|[^\]])+)\]\(source:(?:\/\/)?([^)]+)\)/gi,
+    /\[((?:`[^`\r\n]*`|[^\]`\r\n])+)\]\(source:(?:\/\/)?([^)]+)\)/gi,
     (_whole, rawLabel: string, rawPath: string) => {
       const label = renderSourceReferenceLabel(rawLabel);
       return sourceFileButton(
