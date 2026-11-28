@@ -83,3 +83,8 @@ test('hex colors, opacity and edge styles are validated and exported', () => {
  assert.match(svg,/fill="#12345680" fill-opacity="0.4"/);
  assert.throws(()=>renderDiagramSvg(JSON.stringify({body:{kind:'node',style:{fill:'url(javascript:alert(1))'}}})),/hex color/);
 });
+
+test('memory strip preserves byte proportions and padding', () => {
+ const svg=renderDiagramSvg(JSON.stringify({body:{kind:'memory-layout',scale:32,segments:[{name:'K',bytes:1},{name:'Padding',bytes:3,padding:true},{name:'Value',bytes:4}]}}));
+ assert.match(svg,/width="32" height="54"/); assert.match(svg,/width="96" height="54"/); assert.match(svg,/width="128" height="54"/); assert.match(svg,/stroke-dasharray="5 3"/);
+});

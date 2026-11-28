@@ -4,7 +4,7 @@
  * The same layout is used for the embedded figure and standalone SVG.
  */
 
-type Kind = 'row' | 'column' | 'group' | 'node' | 'cells' | 'text' | 'space';
+type Kind = 'row' | 'column' | 'group' | 'node' | 'cells' | 'text' | 'space' | 'memory-layout' | 'bar' | 'divider' | 'metric' | 'ellipse';
 type Tone = 'neutral' | 'owner' | 'read' | 'write' | 'success' | 'error';
 type Side = 'top' | 'right' | 'bottom' | 'left';
 type Align = 'start' | 'center' | 'end';
@@ -15,6 +15,7 @@ type Style = {
   fillOpacity?: number; strokeOpacity?: number; strokeWidth?: number;
   radius?: number; fontSize?: number; valueSize?: number; dashed?: boolean;
 };
+type Segment = { name: string; bytes: number; tone: Tone; style: Style; padding: boolean };
 type Element = {
   kind: Kind;
   id?: string;
@@ -23,6 +24,10 @@ type Element = {
   text?: string;
   tone: Tone;
   style: Style;
+  segments: Segment[];
+  scale?: number;
+  value?: number;
+  max?: number;
   moved: boolean;
   width?: number;
   height?: number;
@@ -40,7 +45,7 @@ type Palette = Record<Tone | 'foreground' | 'muted' | 'background' | 'frame', st
 
 const tones = ['neutral', 'owner', 'read', 'write', 'success', 'error'] as const;
 const sides = ['top', 'right', 'bottom', 'left'] as const;
-const kinds = ['row', 'column', 'group', 'node', 'cells', 'text', 'space'] as const;
+const kinds = ['row', 'column', 'group', 'node', 'cells', 'text', 'space', 'memory-layout', 'bar', 'divider', 'metric', 'ellipse'] as const;
 const aligns = ['start', 'center', 'end'] as const;
 
 const light: Palette = {
@@ -121,6 +126,24 @@ function parseStyle(value: unknown): Style {
   };
 }
 
+function parseSegments(value: unknown, kind: Kind): Segment[] {
+  if (kind !== 'memory-layout') {
+    if (value !== undefined) fail('segments requires memory-layout');
+    return [];
+  }
+  if (!Array.isArray(value) || value.length < 1 || value.length > 64) fail('memory-layout requires 1–64 segments');
+  return value.map((entry) => {
+    const item = record(entry, 'segment');
+    keys(item, ['name', 'bytes', 'tone', 'style', 'padding'], 'segment');
+    const bytes = number(item.bytes, 'segment.bytes', 1, 4096);
+    if (bytes === undefined || !Number.isInteger(bytes)) fail('segment.bytes must be a positive integer');
+    if (item.padding !== undefined && typeof item.padding !== 'boolean') fail('segment.padding must be boolean');
+    return { name: string(item.name, 'segment.name', 80) ?? '', bytes,
+      tone: choice(item.tone, tones, 'segment.tone') ?? 'neutral',
+      style: parseStyle(item.style), padding: item.padding === true };
+  });
+}
+
 function parse(source: string): Diagram {
   if (source.length > 32000) fail('source exceeds 32,000 characters');
   let raw: unknown;
@@ -134,7 +157,7 @@ function parse(source: string): Diagram {
   function element(value: unknown, depth: number): Element {
     if (++count > 60 || depth > 10) fail('maximum 60 elements and 10 nesting levels');
     const item = record(value, 'element');
-    keys(item, ['kind', 'id', 'title', 'code', 'text', 'tone', 'moved', 'width', 'height', 'gap', 'align', 'children', 'style'], 'element');
+    keys(item, ['kind', 'id', 'title', 'code', 'text', 'tone', 'moved', 'width', 'height', 'gap', 'align', 'children', 'style', 'segments', 'scale', 'value', 'max'], 'element');
     const kind = choice(item.kind, kinds, 'kind');
     if (!kind) fail('element kind is required');
     const id = identifier(item.id, 'id');
@@ -145,13 +168,17 @@ function parse(source: string): Diagram {
     if (item.moved !== undefined && typeof item.moved !== 'boolean') fail('moved must be boolean');
     if (item.children !== undefined && !Array.isArray(item.children)) fail('children must be an array');
     const children = (item.children as unknown[] | undefined ?? []).map((child) => element(child, depth + 1));
-    const container = ['row', 'column', 'group', 'cells'].includes(kind);
+    const container = ['row', 'column', 'group', 'cells', 'ellipse'].includes(kind);
     if (container && !children.length) fail(kind + ' requires children');
     if (!container && children.length) fail(kind + ' cannot contain children');
     if (kind === 'cells' && children.some((child) => child.kind !== 'node')) fail('cells accepts only node children');
     if (kind === 'space' && id) fail('a space cannot have an id');
+    const segments = parseSegments(item.segments, kind);
+    const value = number(item.value, 'value', 0, Number.MAX_SAFE_INTEGER);
+    const max = number(item.max, 'max', 0.000001, Number.MAX_SAFE_INTEGER);
+    if (kind === 'bar' && (value === undefined || max === undefined || value > max)) fail('bar requires 0 <= value <= max');
     return {
-      kind, id, children,
+      kind, id, children, segments, value, max, scale: number(item.scale, 'scale', 4, 120),
       title: string(item.title, 'title'), code: string(item.code, 'code'), text: string(item.text, 'text'),
       tone: choice(item.tone, tones, 'tone') ?? 'neutral', style: parseStyle(item.style),
       moved: item.moved === true,
@@ -212,7 +239,7 @@ function textLines(element: Element, width: number): TextLine[] {
     for (const part of wrap(value, width, size, mono)) lines.push({ value: part, size, mono, strong, muted, strike });
   }
   add(element.title, element.style.fontSize ?? 16, false, true, false);
-  add(element.code, element.style.valueSize ?? element.style.fontSize ?? 16, true, true, element.moved, element.moved);
+  add(element.code, element.style.valueSize ?? (element.kind === 'metric' ? 28 : element.style.fontSize ?? 16), true, true, element.moved, element.moved);
   add(element.text, element.style.fontSize ?? 14, false, false, true);
   return lines;
 }
@@ -229,8 +256,8 @@ function shift(layout: Layout, x: number, y: number) {
 
 function measure(element: Element, minimumWidth = 0): Layout {
   const { kind } = element;
-  const framed = kind === 'group' || kind === 'node';
-  const padding = kind === 'group' ? 18 : kind === 'node' ? 14 : 0;
+  const framed = kind === 'group' || kind === 'node' || kind === 'ellipse';
+  const padding = kind === 'ellipse' ? 44 : kind === 'group' ? 18 : kind === 'node' ? 14 : 0;
   const horizontal = kind === 'row' || kind === 'cells';
   let children = element.children.map((child) => measure(child));
   // A simple vertical flow of nodes should have one consistent width.
@@ -239,6 +266,15 @@ function measure(element: Element, minimumWidth = 0): Layout {
     children = element.children.map((child) => measure(child, width));
   }
   const gap = element.gap;
+  if (kind === 'divider') return { element, bounds: { x: 0, y: 0, w: element.width ?? 320, h: element.height ?? 12 }, children, lines: [] };
+  if (kind === 'memory-layout' || kind === 'bar') {
+    const bytes = element.segments.reduce((sum, segment) => sum + segment.bytes, 0);
+    const plotWidth = kind === 'memory-layout' ? bytes * (element.scale ?? Math.min(64, 600 / bytes)) + 24 : 320;
+    const w = Math.ceil(Math.max(minimumWidth, element.width ?? 0, plotWidth));
+    const lines = textLines(element, w - 24);
+    const h = Math.ceil(Math.max(element.height ?? 0, linesHeight(lines) + (kind === 'memory-layout' ? 106 : 38)));
+    return { element, bounds: {x: 0, y: 0, w, h}, children, lines };
+  }
   if (kind === 'space') return { element, bounds: { x: 0, y: 0, w: element.width ?? 8, h: element.height ?? 24 }, children, lines: [] };
 
   const childWidth = horizontal
@@ -249,7 +285,7 @@ function measure(element: Element, minimumWidth = 0): Layout {
     : children.reduce((sum, child) => sum + child.bounds.h, 0) + Math.max(0, children.length - 1) * gap;
 
   const titleSize = element.style.fontSize ?? 16;
-  const codeSize = element.style.valueSize ?? titleSize;
+  const codeSize = element.style.valueSize ?? (kind === 'metric' ? 28 : titleSize);
   const textSize = element.style.fontSize ?? 14;
   const naturalText = Math.max(
     textWidth(element.title ?? '', titleSize, false),
@@ -422,23 +458,66 @@ function paintText(lines: TextLine[], x: number, y: number, centered: boolean, t
 function paint(layout: Layout, theme: Theme, cell = false): string {
   const { element, bounds: r, lines, children } = layout;
   const { kind, tone, moved } = element;
-  const framed = kind === 'node' || kind === 'group';
+  const framed = kind === 'node' || kind === 'group' || kind === 'ellipse';
   const style = element.style;
   const accent = style.color ?? color(theme, tone);
   const stroke = style.stroke ?? accent;
   const parts: string[] = [];
-  if (framed) {
+  if (kind === 'divider') return '<path d="M' + r.x + ' ' + (r.y+r.h/2) + ' H' + (r.x+r.w) + '" stroke="' + (style.stroke ?? color(theme,'frame')) + '" stroke-width="' + (style.strokeWidth ?? 1) + '"/>';
+  if (kind === 'memory-layout' || kind === 'bar') return paintPlot(layout, theme);
+  if (kind === 'ellipse') {
+    parts.push('<ellipse cx="' + (r.x+r.w/2) + '" cy="' + (r.y+r.h/2) + '" rx="' + r.w/2 + '" ry="' + r.h/2 + '" fill="' + (style.fill ?? accent) + '" fill-opacity="' + (style.fillOpacity ?? .06) + '" stroke="' + stroke + '" stroke-width="' + (style.strokeWidth ?? 1.5) + '"/>');
+  } else if (framed) {
     parts.push('<rect x="' + r.x + '" y="' + r.y + '" width="' + r.w + '" height="' + r.h +
       '" rx="' + (style.radius ?? (cell ? 0 : 8)) + '" fill="' + (style.fill ?? accent) + '" fill-opacity="' + (style.fillOpacity ?? (kind === 'group' ? .035 : .085)) +
       '" stroke="' + stroke + '" stroke-opacity="' + (style.strokeOpacity ?? 1) + '" stroke-width="' + (style.strokeWidth ?? 1.5) + '"' + (moved || style.dashed ? ' stroke-dasharray="6 4"' : '') + '/>');
   }
   if (lines.length) {
     const left = kind === 'group';
-    const y = children.length ? r.y + (left ? 18 : 0) : r.y + (r.h - linesHeight(lines)) / 2;
+    const y = children.length ? r.y + (kind === 'ellipse' ? 44 : left ? 18 : 0) : r.y + (r.h - linesHeight(lines)) / 2;
     parts.push(paintText(lines, left ? r.x + 18 : r.x + r.w / 2, y, !left, theme, moved ? 'error' : tone, style.textColor));
   }
   for (const child of children) parts.push(paint(child, theme, kind === 'cells'));
   return parts.join('');
+}
+
+// A byte strip is deliberately independent of ordinary node minimum widths.
+// A one-byte segment is always exactly half as wide as a two-byte segment.
+function paintPlot(layout: Layout, theme: Theme) {
+  const { element, bounds: r, lines } = layout;
+  const style = element.style;
+  const accent = style.color ?? color(theme, element.tone);
+  const x = r.x + 12;
+  const y = r.y + linesHeight(lines) + 12;
+  let result = paintText(lines, x, r.y, false, theme, element.tone, style.textColor);
+  if (element.kind === 'bar') {
+    const w = r.w - 24;
+    result += '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="16" rx="5" fill="' + color(theme,'neutral') + '" fill-opacity=".12"/>';
+    result += '<rect x="' + x + '" y="' + y + '" width="' + (w * element.value! / element.max!) + '" height="16" rx="5" fill="' + (style.fill ?? accent) + '" fill-opacity="' + (style.fillOpacity ?? 1) + '"/>';
+    return result;
+  }
+  const total = element.segments.reduce((sum, segment) => sum + segment.bytes, 0);
+  const scale = element.scale ?? Math.min(64, 600 / total);
+  const label = (value: string, cx: number, cy: number, size: number, fill: string, anchor = 'middle') =>
+    '<text x="' + cx + '" y="' + cy + '" font-size="' + size + '" text-anchor="' + anchor + '" fill="' + fill + '">' + escape(value) + '</text>';
+  let offset = 0;
+  for (const segment of element.segments) {
+    const sx = x + offset * scale;
+    const w = segment.bytes * scale;
+    const colorValue = segment.style.color ?? color(theme, segment.tone);
+    result += label(String(offset), sx, y + 8, 12, color(theme,'muted'), 'start');
+    result += '<rect x="' + sx + '" y="' + (y+18) + '" width="' + w + '" height="54" rx="' + (segment.style.radius ?? 3) +
+      '" fill="' + (segment.style.fill ?? colorValue) + '" fill-opacity="' + (segment.style.fillOpacity ?? .16) + '" stroke="' +
+      (segment.style.stroke ?? colorValue) + '" stroke-opacity="' + (segment.style.strokeOpacity ?? 1) + '" stroke-width="' + (segment.style.strokeWidth ?? 1.2) +
+      '"' + (segment.padding || segment.style.dashed ? ' stroke-dasharray="5 3"' : '') + '/>';
+    const name = textWidth(segment.name, 14, false) <= w - 6 ? segment.name : segment.name.slice(0,1);
+    const textColor = segment.style.textColor ?? color(theme,'foreground');
+    if (w >= 14) result += label(name, sx+w/2, y+40, w >= 50 ? 14 : 11, textColor);
+    if (w >= 28) result += label(segment.bytes + ' B', sx+w/2, y+59, 11, textColor);
+    offset += segment.bytes;
+  }
+  result += label(String(total), x+total*scale, y+8, 12, color(theme,'muted'), 'end');
+  return result;
 }
 
 function paintEdge(points: Point[], edge: Edge, theme: Theme) {
