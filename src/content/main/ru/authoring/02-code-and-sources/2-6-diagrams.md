@@ -10,15 +10,15 @@
 
 ```diagram
 {
-  "title": "Stack and heap",
-  "caption": "Fields are stored inside the local value on the left; the local variable on the right holds an internal address. Optimizations are omitted.",
+  "title": "Стек и куча",
+  "caption": "Слева поля находятся внутри локального значения; справа локальная переменная содержит служебный адрес экземпляра. Без учёта оптимизаций.",
   "body": {
     "kind": "column",
     "gap": 40,
     "children": [
       {
         "kind": "group",
-        "title": "STACK",
+        "title": "STACK · Стек",
         "width": 650,
         "children": [
           {
@@ -37,14 +37,14 @@
                       { "kind": "node", "title": "Y", "code": "20", "width": 136 }
                     ]
                   },
-                  { "kind": "text", "text": "Fields inside the local value" }
+                  { "kind": "text", "text": "Поля внутри локального значения" }
                 ]
               },
               {
                 "kind": "column",
                 "children": [
                   { "kind": "text", "code": "other : Point" },
-                  { "kind": "node", "id": "address", "title": "Instance address", "tone": "owner", "width": 272, "height": 72 }
+                  { "kind": "node", "id": "address", "title": "Адрес экземпляра", "tone": "owner", "width": 272, "height": 72 }
                 ]
               }
             ]
@@ -53,7 +53,7 @@
       },
       {
         "kind": "group",
-        "title": "HEAP",
+        "title": "HEAP · Куча",
         "tone": "owner",
         "width": 650,
         "children": [
@@ -86,15 +86,15 @@
 
 ```diagram
 {
-  "title": "Fixed array and slice",
-  "caption": "A slice contains a data address and length. Elements live in the allocated buffer.",
+  "title": "Фиксированный массив и срез",
+  "caption": "Срез содержит адрес данных и длину. Элементы находятся в выделенном буфере.",
   "body": {
     "kind": "column",
     "gap": 40,
     "children": [
       {
         "kind": "group",
-        "title": "STACK",
+        "title": "STACK · Стек",
         "width": 670,
         "children": [
           {
@@ -116,7 +116,7 @@
                       { "kind": "node", "title": "[3]", "code": "5", "width": 70 }
                     ]
                   },
-                  { "kind": "text", "text": "Elements inside the value" }
+                  { "kind": "text", "text": "Элементы внутри значения" }
                 ]
               },
               {
@@ -127,11 +127,11 @@
                   {
                     "kind": "cells",
                     "children": [
-                      { "kind": "node", "id": "data", "title": "Data address", "tone": "owner", "width": 155 },
+                      { "kind": "node", "id": "data", "title": "Адрес данных", "tone": "owner", "width": 155 },
                       { "kind": "node", "title": "Length", "code": "3", "width": 126 }
                     ]
                   },
-                  { "kind": "text", "text": "Address and element count" }
+                  { "kind": "text", "text": "Адрес и число элементов" }
                 ]
               }
             ]
@@ -140,7 +140,7 @@
       },
       {
         "kind": "group",
-        "title": "HEAP",
+        "title": "HEAP · Куча",
         "tone": "owner",
         "width": 670,
         "children": [
@@ -174,8 +174,8 @@
 
 ```diagram
 {
-  "title": "Moving a value",
-  "caption": "Ownership transfer without duplicating the resource.",
+  "title": "Перемещение значения",
+  "caption": "Передача владения без создания второго экземпляра ресурса.",
   "body": {
     "kind": "row",
     "gap": 38,
@@ -185,20 +185,20 @@
         "kind": "column",
         "gap": 18,
         "children": [
-          { "kind": "text", "title": "Before moving" },
-          { "kind": "node", "id": "first", "code": "first", "text": "Owner", "width": 260, "height": 78 },
+          { "kind": "text", "title": "До перемещения" },
+          { "kind": "node", "id": "first", "code": "first", "text": "Владелец", "width": 260, "height": 78 },
           { "kind": "space", "height": 68 },
-          { "kind": "node", "id": "resource1", "title": "Resource", "tone": "owner", "width": 260, "height": 64 }
+          { "kind": "node", "id": "resource1", "title": "Ресурс", "tone": "owner", "width": 260, "height": 64 }
         ]
       },
       {
         "kind": "column",
         "gap": 18,
         "children": [
-          { "kind": "text", "title": "After moving" },
-          { "kind": "node", "code": "first", "text": "Moved", "moved": true, "width": 260, "height": 78 },
-          { "kind": "node", "id": "second", "code": "second", "text": "New owner", "tone": "owner", "width": 260, "height": 68 },
-          { "kind": "node", "id": "resource2", "title": "Resource", "tone": "owner", "width": 260, "height": 64 }
+          { "kind": "text", "title": "После перемещения" },
+          { "kind": "node", "code": "first", "text": "Перемещено", "moved": true, "width": 260, "height": 78 },
+          { "kind": "node", "id": "second", "code": "second", "text": "Новый владелец", "tone": "owner", "width": 260, "height": 68 },
+          { "kind": "node", "id": "resource2", "title": "Ресурс", "tone": "owner", "width": 260, "height": 64 }
         ]
       }
     ]
@@ -215,16 +215,16 @@
 
 ```diagram
 {
-  "title": "From Markdown to SVG",
+  "title": "От Markdown до SVG",
   "body": {
     "kind": "column",
     "gap": 26,
     "children": [
-      { "kind": "node", "id": "markdown", "title": "Markdown", "text": "diagram block", "width": 260 },
-      { "kind": "node", "id": "extract", "code": "extractCodeBlocks", "text": "Extract the fence", "width": 260 },
-      { "kind": "node", "id": "parse", "title": "Diagram parser", "text": "Validate the model", "width": 260 },
-      { "kind": "node", "id": "render", "title": "SVG renderer", "text": "Layout and rendering", "width": 260 },
-      { "kind": "node", "id": "book", "title": "Book Cvolo", "text": "Rendered diagram", "width": 260 }
+      { "kind": "node", "id": "markdown", "title": "Markdown", "text": "Блок diagram", "width": 260 },
+      { "kind": "node", "id": "extract", "code": "extractCodeBlocks", "text": "Извлечение блока", "width": 260 },
+      { "kind": "node", "id": "parse", "title": "Diagram parser", "text": "Проверка структуры", "width": 260 },
+      { "kind": "node", "id": "render", "title": "SVG renderer", "text": "Компоновка и отрисовка", "width": 260 },
+      { "kind": "node", "id": "book", "title": "Book Cvolo", "text": "Готовая схема", "width": 260 }
     ]
   },
   "edges": [
@@ -259,13 +259,13 @@
 ````markdown
 ```diagram
 {
-  "title": "Example",
+  "title": "Пример",
   "body": {
     "kind": "column",
     "gap": 28,
     "children": [
       { "kind": "node", "id": "a", "code": "owner" },
-      { "kind": "node", "id": "b", "title": "Resource", "tone": "owner" }
+      { "kind": "node", "id": "b", "title": "Ресурс", "tone": "owner" }
     ]
   },
   "edges": [
@@ -311,6 +311,6 @@ npm run diagrams:export -- path/to/article.md ./images both
 
 Корневое свойство `"align": "left"` размещает карточку у левого края статьи. Также доступны `center` и `right`. Без этого свойства статические схемы центрируются, а интерактивные занимают всю ширину. Явное выравнивание сохраняет естественную ширину карточки в пределах статьи. Внутреннее `body.align` по-прежнему управляет компоновкой элементов, а не карточкой. Свойство `gap` у связи задаёт зазор между её концами и блоками в единицах SVG (0–24). По умолчанию стрелки имеют зазор 5; линии без наконечника — 0. На коротких участках зазор автоматически уменьшается.
 
-Во вкладке «Исходник» доступен полный Markdown-блок; в меню можно скопировать его. Примеры схем приведены на английском, текст руководства и интерфейс локализованы.
+В меню «⋯» выберите «Посмотреть исходник», чтобы открыть полноразмерное окно с Markdown-блоком и подсветкой JSON. Там же доступно копирование. Содержимое схем локализовано вместе со статьёй; экспортная галерея репозитория использует английские примеры.
 
 Неподписанные рамками текстовые пояснения не являются жёсткими препятствиями для связей. Если обход существенно усложняет маршрут, линия проходит под текстом: участок под подписью скрывается без заливки фона. Обычные блоки остаются препятствиями. Ширина текста оценивается приближённо.

@@ -2123,4 +2123,4 @@ Text measurement is approximate; long labels may require extra width. Crossings 
 
 The title and “⋯” menu remain in the card header outside the scrolling graphic. On mobile viewports (up to 767 CSS pixels), diagrams retain their original size and scroll horizontally if needed; larger viewports fit the available width. The menu lets readers override the mode for each diagram. Standalone SVG exports retain their title.
 
-Use the Source tab to inspect each complete Markdown fence. Switching back to Preview preserves the selected parameters. The independent engine lives in `packages/visuals`.
+Choose View source in the “⋯” menu to inspect the complete Markdown fence. Closing the viewer preserves the selected parameters. The independent engine lives in `packages/visuals`.

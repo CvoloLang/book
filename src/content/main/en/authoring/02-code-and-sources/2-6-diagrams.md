@@ -311,6 +311,6 @@ The title and “⋯” menu remain in the card header outside the scrolling gra
 
 Set root `"align": "left"` to align the card to the left of the article. `center` and `right` are also supported. Without this property, static diagrams are centered and interactive figures fill the available width. Explicit alignment keeps the natural card width within the article. `body.align` still controls internal layout, not card placement. An edge `gap` sets endpoint clearance in SVG units (0–24). Arrows default to 5; connectors without arrowheads default to 0. Clearance is reduced automatically on short segments.
 
-The Source tab displays the complete Markdown fence; copy it from the actions menu. Example diagrams use English, while the guide and interface are localized.
+Choose View source in the “⋯” menu to open the complete Markdown fence in a full-size viewer with JSON highlighting. Copy it from the viewer or the menu. Diagrams follow the article locale; repository SVG snapshots use English.
 
 Unframed text annotations are soft routing obstacles. If a detour would make the route unnecessarily complex, a connector passes behind the annotation: the shaft is clipped around the text without adding an opaque background. Framed nodes remain obstacles. Text width is estimated.

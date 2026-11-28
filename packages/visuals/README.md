@@ -4,7 +4,7 @@ Framework-independent TypeScript engine for declarative technical diagrams.
 
 - `src/model.ts`: state, data expressions and natural-alignment memory calculations.
 - `src/render.ts`: layout, SVG generation and portable figure markup.
-- `src/client.ts`: browser enhancement for controls, source view and downloads.
+- `src/client.ts`: browser enhancement for controls, source viewer and downloads.
 - `src/diagram.css`: responsive styles and theme tokens.
 - `src/index.ts`: server-safe public API.
 - `src/standalone.ts`: entry for the portable HTML bundle.
@@ -24,3 +24,5 @@ For interactive figures, include `src/diagram.css` and call `enhanceDiagrams(con
 This is a private source package consumed through local paths, not a published npm distribution. A compiled ESM/declaration build and release workflow can be added when the API stabilizes. No workspace installation or lockfile changes are required.
 
 From the Book root, run `npm run diagrams:test` or `npx tsc -p packages/visuals/tsconfig.json`.
+
+`enhanceDiagrams(container, { openSource: (markdown, title) => { /* host viewer */ } })` optionally delegates source viewing to the host application. Without this callback, the package opens its own native dialog. The callback receives the original Markdown fence, independent of the current parameter state.
