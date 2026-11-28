@@ -176,11 +176,11 @@ function parse(source: string): Diagram {
     if (kind === 'cells' && children.some((child) => child.kind !== 'node')) fail('cells accepts only node children');
     if (kind === 'space' && id) fail('a space cannot have an id');
     const segments = parseSegments(item.segments, kind);
-    const value = number(item.value, 'value', 0, Number.MAX_SAFE_INTEGER);
+    const plotValue = number(item.value, 'value', 0, Number.MAX_SAFE_INTEGER);
     const max = number(item.max, 'max', 0.000001, Number.MAX_SAFE_INTEGER);
-    if (kind === 'bar' && (value === undefined || max === undefined || value > max)) fail('bar requires 0 <= value <= max');
+    if (kind === 'bar' && (plotValue === undefined || max === undefined || plotValue > max)) fail('bar requires 0 <= value <= max');
     return {
-      kind, id, children, segments, value, max, scale: number(item.scale, 'scale', 4, 120),
+      kind, id, children, segments, value: plotValue, max, scale: number(item.scale, 'scale', 4, 120),
       title: string(item.title, 'title'), code: string(item.code, 'code'), text: string(item.text, 'text'),
       tone: choice(item.tone, tones, 'tone') ?? 'neutral', style: parseStyle(item.style),
       moved: item.moved === true,
@@ -512,9 +512,10 @@ function paintPlot(layout: Layout, theme: Theme) {
       '" fill="' + (segment.style.fill ?? colorValue) + '" fill-opacity="' + (segment.style.fillOpacity ?? .16) + '" stroke="' +
       (segment.style.stroke ?? colorValue) + '" stroke-opacity="' + (segment.style.strokeOpacity ?? 1) + '" stroke-width="' + (segment.style.strokeWidth ?? 1.2) +
       '"' + (segment.padding || segment.style.dashed ? ' stroke-dasharray="5 3"' : '') + '/>';
-    const name = textWidth(segment.name, 14, false) <= w - 6 ? segment.name : segment.name.slice(0,1);
+    const name = textWidth(segment.name, 14, false) <= w - 6 ? segment.name :
+      textWidth(segment.name, 11, false) <= w - 6 ? segment.name : segment.name.slice(0,1);
     const textColor = segment.style.textColor ?? color(theme,'foreground');
-    if (w >= 14) result += label(name, sx+w/2, y+40, w >= 50 ? 14 : 11, textColor);
+    if (w >= 14) result += label(name, sx+w/2, y+40, textWidth(name,14,false) <= w-6 ? 14 : 11, textColor);
     if (w >= 28) result += label(segment.bytes + ' B', sx+w/2, y+59, 11, textColor);
     offset += segment.bytes;
   }
@@ -541,10 +542,10 @@ function paintEdge(points: Point[], edge: Edge, theme: Theme) {
 function build(source: string, state: State = {}) {
   const diagram = parse(materializeDiagram(source, state));
   const layout = measure(diagram.body);
-  const width = Math.max(diagram.width ?? 320, layout.bounds.w + 48,
+  const width = Math.ceil(Math.max(diagram.width ?? 320, layout.bounds.w + 48,
     Math.min(800, textWidth(diagram.title, 18, false) + 52),
     ...diagram.title.split(/\s+/).map((word) => Math.ceil(textWidth(word, 18, false)) + 52),
-    ...diagram.caption.split(/\s+/).map((word) => Math.ceil(textWidth(word, 13, false)) + 52));
+    ...diagram.caption.split(/\s+/).map((word) => Math.ceil(textWidth(word, 13, false)) + 52)));
   const titleLines = wrap(diagram.title, width - 48, 18, false);
   const captionLines = wrap(diagram.caption, width - 48, 13, false);
   const headerHeight = diagram.title ? titleLines.length * 24 + 12 : 0;
@@ -601,7 +602,8 @@ export function renderDiagramFigure(source: string, contextKey: string, id: stri
   const state = getState(controls);
   const diagram = build(source,state);
   // Validate every finite option combination (slider uses its default).
-  for (const variant of getVariants(source)) build(source,variant);
+  let preferredWidth = diagram.width;
+  for (const variant of getVariants(source)) preferredWidth = Math.max(preferredWidth, build(source,variant).width);
   const ru = contextKey.split('/').at(-1) === 'ru';
   const filename = 'diagram-' + id.replace(/[^a-zA-Z0-9_-]/g, '-');
   function link(theme: 'light' | 'dark', label: string) {
@@ -609,7 +611,7 @@ export function renderDiagramFigure(source: string, contextKey: string, id: stri
       encodeURIComponent(diagram.svg(theme)) + '">' + label + '</a>';
   }
   const interactive = controls.length ? ' data-diagram-source="' + escape(source) + '"' : '';
-  return '<figure class="book-diagram' + (controls.length ? ' book-diagram-interactive' : '') + '" style="--book-diagram-width:' + diagram.width + 'px"' + interactive + '>' +
+  return '<figure class="book-diagram' + (controls.length ? ' book-diagram-interactive' : '') + '" style="--book-diagram-width:' + preferredWidth + 'px"' + interactive + '>' +
     (controls.length ? '<div class="book-diagram-controls">' + renderControls(controls,filename) + '</div>' : '') +
     '<div class="book-diagram-scroll" tabindex="0" aria-label="' + (ru ? 'Схема' : 'Diagram') + '">' +
     diagram.svg('book') + '</div><div data-diagram-error role="status" hidden></div><div class="book-diagram-actions">' +

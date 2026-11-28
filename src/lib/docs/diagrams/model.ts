@@ -24,7 +24,10 @@ function finite(value: unknown, name: string): number {
 }
 function root(source: string): JsonObject {
   if (source.length > 64000) fail('source exceeds 64,000 characters');
-  return object(JSON.parse(source), 'root');
+  let parsed: unknown;
+  try { parsed = JSON.parse(source); }
+  catch (cause) { fail(cause instanceof Error ? cause.message : 'invalid JSON'); }
+  return object(parsed, 'root');
 }
 function validId(value: unknown): string {
   const id = text(value, 'control id');

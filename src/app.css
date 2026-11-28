@@ -849,3 +849,18 @@ html.dark .code-tab-panel .code-fragment-mark {
 .book-diagram-control select { border: 1px solid var(--book-diagram-frame); border-radius: .4rem; padding: .45rem; color: var(--book-diagram-foreground); background: var(--book-diagram-background); }
 .book-diagram [data-diagram-error] { color: var(--book-diagram-error); font-size: .85rem; margin-top: .5rem; }
 .book-diagram-actions a[aria-disabled=true] { opacity: .5; pointer-events: none; }
+
+.book-diagram-interactive {
+  padding: .65rem; border: 1px solid var(--book-diagram-frame);
+  border-radius: .9rem; background: var(--book-diagram-background);
+}
+.book-diagram-interactive .book-diagram-controls {
+  border: 0; border-bottom: 1px solid var(--book-diagram-frame);
+  border-radius: 0; background: transparent; padding: .3rem .35rem .9rem;
+}
+.book-diagram-interactive .book-diagram-scroll > svg > rect:first-of-type {
+  stroke: none; fill: none;
+}
+.book-diagram-options label:hover span {
+  background: color-mix(in srgb, var(--book-diagram-owner) 8%, transparent);
+}

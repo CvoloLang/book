@@ -63,8 +63,19 @@ export function enhanceDiagrams(article: HTMLElement) {
       for (const item of current) if (article.contains(item)) redraw(item);
     });
   }
+  // A download immediately following a slider change must use that exact
+  // state, even if the scheduled animation frame has not run yet.
+  function beforeDownload(event: MouseEvent) {
+    if (!(event.target instanceof Element)) return;
+    const link = event.target.closest<HTMLAnchorElement>('[data-diagram-export]');
+    const figure = link?.closest<HTMLElement>('[data-diagram-source]');
+    if (figure && pending.delete(figure)) redraw(figure);
+    if (link?.getAttribute('aria-disabled') === 'true') event.preventDefault();
+  }
+  article.addEventListener('click',beforeDownload);
   article.addEventListener('input',onInput);
   return () => {
+    article.removeEventListener('click',beforeDownload);
     article.removeEventListener('input',onInput);
     if (frame) cancelAnimationFrame(frame);
     pending.clear();

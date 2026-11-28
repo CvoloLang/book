@@ -96,3 +96,14 @@ test('interactive controls resolve safe numeric expressions and export selected 
   assert.match(renderDiagramFigure(source,'main/en','interactive'),/type="range"/);
   assert.throws(()=>renderDiagramSvg(source,'light',{count:101}),/invalid value/);
 });
+
+test('natural alignment inserts internal and trailing padding', async () => {
+  const { computeMemoryLayout } = await import('../../src/lib/docs/diagrams/model.ts');
+  const fields = [{name:'Kind',size:1,alignment:1},{name:'Value',size:4,alignment:4},{name:'Flags',size:1,alignment:1}];
+  const before = computeMemoryLayout(fields);
+  const after = computeMemoryLayout([fields[1],fields[0],fields[2]]);
+  assert.deepEqual([before.size,before.alignment,before.padding],[12,4,6]);
+  assert.deepEqual([after.size,after.alignment,after.padding],[8,4,2]);
+  assert.deepEqual(before.segments.map(s=>s.bytes),[1,3,4,1,3]);
+  assert.throws(()=>computeMemoryLayout([{name:'Bad',size:4,alignment:3}]),/alignment/);
+});
