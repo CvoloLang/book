@@ -55,6 +55,7 @@ export function enhanceDiagrams(article: HTMLElement, options: { openSource?: (m
       const option = control.options[Number(input.value)];
       if (!option) return;
       state[id] = option.value;
+      if (control.kind === 'steps' && input instanceof HTMLSelectElement) syncSteps(input);
     }
     states.set(figure,state);
     pending.add(figure);
@@ -64,6 +65,31 @@ export function enhanceDiagrams(article: HTMLElement, options: { openSource?: (m
       pending=new Set();
       for (const item of current) if (article.contains(item)) redraw(item);
     });
+  }
+  function syncSteps(select: HTMLSelectElement) {
+    const steps = select.closest('.book-diagram-steps');
+    if (!steps) return;
+    const previous = steps.querySelector<HTMLButtonElement>('[data-diagram-step="-1"]');
+    const next = steps.querySelector<HTMLButtonElement>('[data-diagram-step="1"]');
+    const counter = steps.querySelector<HTMLElement>('[data-diagram-step-count]');
+    if (previous) previous.disabled = select.selectedIndex <= 0;
+    if (next) next.disabled = select.selectedIndex >= select.options.length - 1;
+    if (counter) counter.textContent = (select.selectedIndex + 1) + ' / ' + select.options.length;
+  }
+  function onStepClick(event: MouseEvent) {
+    if (!(event.target instanceof Element)) return;
+    const button = event.target.closest<HTMLButtonElement>('[data-diagram-step]');
+    if (!button || button.disabled) return;
+    const select = button.closest('.book-diagram-steps')?.querySelector<HTMLSelectElement>('select');
+    if (!select) return;
+    const index = select.selectedIndex + Number(button.dataset.diagramStep);
+    if (index < 0 || index >= select.options.length) return;
+    select.selectedIndex = index;
+    select.dispatchEvent(new Event('input', { bubbles: true }));
+    if (button.disabled) {
+      const trigger = select.parentElement?.querySelector<HTMLElement>('[data-diagram-select-host] button');
+      (trigger ?? select).focus();
+    }
   }
   // A download immediately following a slider change must use that exact
   // state, even if the scheduled animation frame has not run yet.
@@ -170,11 +196,13 @@ export function enhanceDiagrams(article: HTMLElement, options: { openSource?: (m
   owner.addEventListener('keydown', onMenuKeydown);
   article.addEventListener('click',beforeDownload);
   article.addEventListener('input',onInput);
+  article.addEventListener('click',onStepClick);
   return () => {
     owner.removeEventListener('click', onMenuClick);
     owner.removeEventListener('keydown', onMenuKeydown);
     article.removeEventListener('click',beforeDownload);
     article.removeEventListener('input',onInput);
+    article.removeEventListener('click',onStepClick);
     if (frame) cancelAnimationFrame(frame);
     pending.clear();
   };

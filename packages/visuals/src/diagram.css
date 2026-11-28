@@ -245,3 +245,19 @@
 .book-diagram[data-diagram-align="left"] { margin-inline: 0 auto; }
 .book-diagram[data-diagram-align="center"] { margin-inline: auto; }
 .book-diagram[data-diagram-align="right"] { margin-inline: auto 0; }
+
+.book-diagram-steps { display: flex; align-items: center; gap: .5rem; }
+.book-diagram-steps > select { flex: 1; min-width: 0; }
+.book-diagram-steps > button {
+  flex: none; width: 2.5rem; height: 2.5rem; display: grid; place-items: center;
+  border: 1px solid var(--book-diagram-frame); border-radius: .5rem;
+  color: var(--book-diagram-foreground); background: transparent;
+  font: inherit; font-size: 1.5rem; cursor: pointer;
+}
+.book-diagram-steps > button:disabled { opacity: .35; cursor: default; }
+.book-diagram-steps > button:not(:disabled):hover { border-color: var(--book-diagram-owner); }
+.book-diagram-steps > span { flex: none; color: var(--book-diagram-muted); font-size: .8rem; font-variant-numeric: tabular-nums; }
+
+/* Book can replace the native step selector with its own accessible UI. */
+.book-diagram-steps > [data-diagram-select-host] { flex: 1; min-width: 0; }
+.book-diagram-steps > select[hidden] { display: none; }

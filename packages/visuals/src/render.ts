@@ -458,7 +458,15 @@ function route(edge: Edge, items: Layout[], canvas: Rect): Point[] {
     // unnecessary bends just to avoid an unframed text annotation.
     const intersections = annotations.filter((rect) =>
       points.slice(1).some((point, i) => crosses(points[i], point, rect))).length;
-    const score = length + intersections * 8;
+    // Short terminal legs shrink the arrowhead and put it on the corner.
+    // Prefer a corridor with room for the shaft, head and endpoint gap.
+    const distance = (a: Point, b: Point) => Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+    const firstLeg = distance(points[0], points[1]);
+    const lastLeg = distance(points[points.length - 2], points[points.length - 1]);
+    const clearance = edge.arrow && points.length > 2
+      ? 4 * (Math.max(0, edge.gap + 12 - firstLeg) + Math.max(0, edge.gap + 18 - lastLeg))
+      : 0;
+    const score = length + intersections * 8 + clearance;
     if (score < cost) { best = points; cost = score; }
   }
   if (!best) fail('cannot route ' + edge.from + ' → ' + edge.to + '; increase gaps or specify edge sides');
@@ -623,6 +631,7 @@ function paintEdge(points: Point[], edge: Edge, theme: Theme, annotations: Rect[
   const end = points[points.length - 1], prev = points[points.length - 2];
   const dx = Math.sign(end.x - prev.x), dy = Math.sign(end.y - prev.y);
   const tipLength = edge.arrow ? Math.min(9, Math.abs(end.x - prev.x) + Math.abs(end.y - prev.y)) : 0;
+  const halfHead = Math.min(4, tipLength * 4 / 9);
   const base = { x: end.x - tipLength * dx, y: end.y - tipLength * dy };
   const stroke = edge.style.stroke ?? edge.style.color ?? color(theme, edge.tone);
   const opacity = edge.style.strokeOpacity ?? 1;
@@ -632,8 +641,8 @@ function paintEdge(points: Point[], edge: Edge, theme: Theme, annotations: Rect[
   const shaft = visibleShaft([...points.slice(0, -1), base], annotations);
   return shaft.map((part) => '<polyline points="' + part.map((p) => p.x + ',' + p.y).join(' ') +
     '" fill="none" stroke="' + stroke + '" stroke-opacity="' + opacity + '" stroke-width="' + width + '" stroke-linejoin="round" stroke-linecap="round"' + (edge.style.dashed ? ' stroke-dasharray="6 4"' : '') + '/>').join('') +
-    (edge.arrow ? '<polygon points="' + end.x + ',' + end.y + ' ' + (base.x - 4 * dy) + ',' + (base.y + 4 * dx) +
-    ' ' + (base.x + 4 * dy) + ',' + (base.y - 4 * dx) + '" fill="' + stroke + '" fill-opacity="' + opacity + '"/>' : '') + label;
+    (edge.arrow ? '<polygon points="' + end.x + ',' + end.y + ' ' + (base.x - halfHead * dy) + ',' + (base.y + halfHead * dx) +
+    ' ' + (base.x + halfHead * dy) + ',' + (base.y - halfHead * dx) + '" fill="' + stroke + '" fill-opacity="' + opacity + '"/>' : '') + label;
 }
 
 function build(source: string, state: State = {}, embedded = false) {
@@ -683,13 +692,22 @@ export function renderDiagramView(source: string, state: State = {}) {
 }
 
 /** Server-rendered controls, default SVG and portable downloads. */
-function renderControls(controls: Control[], id: string) {
+function renderControls(controls: Control[], id: string, ru: boolean) {
   return controls.map((control) => {
     const name = escape(id + '-' + control.id);
     const label = escape(control.label);
     if (control.kind === 'slider') {
       return '<label class="book-diagram-control"><span>' + label + ' <output data-diagram-output="' + control.id + '">' + control.default + '</output></span>' +
         '<input type="range" name="' + name + '" data-diagram-control="' + control.id + '" min="' + control.min + '" max="' + control.max + '" step="' + control.step + '" value="' + control.default + '"></label>';
+    }
+    if (control.kind === 'steps') {
+      const index = control.options.findIndex((option) => option.value === control.default);
+      return '<fieldset class="book-diagram-control"><legend>' + label + '</legend><div class="book-diagram-steps">' +
+        '<button type="button" data-diagram-step="-1" aria-label="' + (ru ? 'Предыдущий шаг' : 'Previous step') + '"' + (index === 0 ? ' disabled' : '') + '>‹</button>' +
+        '<select aria-label="' + label + '" name="' + name + '" data-diagram-control="' + control.id + '">' +
+        control.options.map((option, i) => '<option value="' + i + '"' + (i === index ? ' selected' : '') + '>' + (i + 1) + '. ' + escape(option.label) + '</option>').join('') +
+        '</select><span data-diagram-step-count aria-live="polite">' + (index + 1) + ' / ' + control.options.length + '</span>' +
+        '<button type="button" data-diagram-step="1" aria-label="' + (ru ? 'Следующий шаг' : 'Next step') + '"' + (index === control.options.length - 1 ? ' disabled' : '') + '>›</button></div></fieldset>';
     }
     if (control.kind === 'select') {
       return '<label class="book-diagram-control"><span>' + label + '</span><select name="' + name + '" data-diagram-control="' + control.id + '">' +
@@ -752,7 +770,7 @@ export function renderDiagramFigure(source: string, locale: 'ru' | 'en', id: str
     '<button type="button" data-diagram-close-source aria-label="' + (ru ? 'Закрыть' : 'Close') + '">×</button></div></header>' +
     '<pre tabindex="0" data-diagram-markdown>' + escape(markdown) + '</pre><div data-diagram-copy-status role="status"></div></dialog>';
   return '<figure class="book-diagram' + (controls.length ? ' book-diagram-interactive' : '') + '" style="--book-diagram-width:' + preferredWidth + 'px"' + (diagram.align ? ' data-diagram-align="' + diagram.align + '"' : '') + interactive + '>' + toolbar +
-    (controls.length ? '<div class="book-diagram-controls">' + renderControls(controls,filename) + '</div>' : '') +
+    (controls.length ? '<div class="book-diagram-controls">' + renderControls(controls,filename,ru) + '</div>' : '') +
     '<div class="book-diagram-scroll" role="region" tabindex="0" aria-label="' + (ru ? 'Схема' : 'Diagram') + '">' +
     renderDiagramView(source, state).svg + '</div><div data-diagram-error role="status" hidden></div>' + sourcePanel + '<div class="book-diagram-copy-status" data-diagram-copy-status role="status"></div></figure>';
 }

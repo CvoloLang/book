@@ -2,6 +2,8 @@
   import { base } from '$app/paths';
   import { page } from '$app/stores';
   import Sidebar from '$lib/components/Sidebar.svelte';
+  import DiagramStepSelect from '$lib/components/DiagramStepSelect.svelte';
+  import { mount, unmount } from 'svelte';
   import PageToc from '$lib/components/PageToc.svelte';
   import { Copy, ExternalLink, Github, X } from '@lucide/svelte';
   import type { TopicPage } from '$lib/docs/types';
@@ -279,10 +281,25 @@
   // The action is recreated automatically when this article element changes.
   function enhanceArticle(node: HTMLElement, _html: string) {
     let generation = 0;
+    const selects = new Map<HTMLSelectElement, () => void>();
+    function enhanceStepSelects() {
+      for (const [select, destroy] of selects) {
+        if (!node.contains(select)) { destroy(); selects.delete(select); }
+      }
+      for (const select of node.querySelectorAll<HTMLSelectElement>('.book-diagram-steps > select')) {
+        if (selects.has(select)) continue;
+        const host = document.createElement('div');
+        host.dataset.diagramSelectHost = '';
+        select.after(host);
+        const instance = mount(DiagramStepSelect, { target: host, props: { select } });
+        select.hidden = true;
+        selects.set(select, () => { void unmount(instance); host.remove(); select.hidden = false; });
+      }
+    }
     const scheduleDecoration = () => {
       const current = ++generation;
       queueMicrotask(() => {
-        if (current === generation) decorateGoToDefinitions(node);
+        if (current === generation) { decorateGoToDefinitions(node); enhanceStepSelects(); }
       });
     };
 
@@ -291,7 +308,7 @@
     scheduleDecoration();
     return {
       update() { scheduleDecoration(); },
-      destroy() { ++generation; destroyDiagrams(); node.removeEventListener('click', articleClick); }
+      destroy() { ++generation; for (const destroy of selects.values()) destroy(); selects.clear(); destroyDiagrams(); node.removeEventListener('click', articleClick); }
     };
   }
 

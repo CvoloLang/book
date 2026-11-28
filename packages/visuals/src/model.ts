@@ -4,7 +4,7 @@
  */
 export type State = Record<string, string | number>;
 export type Option = { label: string; value: string | number };
-export type ChoiceControl = { kind: 'tabs' | 'select'; id: string; label: string; options: Option[]; default: string | number };
+export type ChoiceControl = { kind: 'tabs' | 'select' | 'steps'; id: string; label: string; options: Option[]; default: string | number };
 export type RangeControl = { kind: 'slider'; id: string; label: string; min: number; max: number; step: number; default: number };
 export type Control = ChoiceControl | RangeControl;
 type JsonObject = Record<string, unknown>;
@@ -59,7 +59,7 @@ function controlsFrom(value: unknown): Control[] {
         !onStep(max,min,step) || (max-min)/step > 1000000) fail('invalid slider range or default');
       return { kind:'slider', id, label, min, max, step, default:initial };
     }
-    if (item.kind !== 'tabs' && item.kind !== 'select') fail('control kind must be tabs, select or slider');
+    if (item.kind !== 'tabs' && item.kind !== 'select' && item.kind !== 'steps') fail('control kind must be tabs, select, steps or slider');
     allowed(item, ['kind','id','label','options','default'], 'choice');
     if (!Array.isArray(item.options) || !item.options.length || item.options.length > 12) fail('choice requires 1–12 options');
     const options = item.options.map((rawOption): Option => {

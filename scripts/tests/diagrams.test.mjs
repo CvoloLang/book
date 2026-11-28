@@ -263,3 +263,29 @@ test('framed nodes remain hard routing obstacles', () => {
   assert.equal(shafts.length,1);
   assert.ok(new Set(shafts[0][1].split(' ').map(p=>p.split(',')[0])).size>1);
 });
+
+test('step controls preserve order and export each selected state', async () => {
+  const { getVariants } = await import('../../packages/visuals/src/index.ts');
+  const input = JSON.stringify({controls:[{kind:'steps',id:'step',label:'Transfer',options:[
+    {label:'Before',value:'before'},{label:'After',value:'after'}],default:'before'}],
+    body:{kind:'node',title:{$switch:'step',cases:{before:'First owner',after:'Second owner'}}}});
+  const figure = renderDiagramFigure(input,'en','steps');
+  assert.match(figure,/data-diagram-step="-1"[^>]* disabled/);
+  assert.match(figure,/data-diagram-step-count aria-live="polite">1 \/ 2/);
+  assert.deepEqual(getVariants(input).map(s=>s.step),['before','after']);
+  assert.match(renderDiagramSvg(input,'dark',{step:'after'}),/>Second owner<\/text>/);
+  assert.throws(()=>renderDiagramSvg(input,'dark',{step:'bad'}),/invalid option/);
+});
+
+test('elbow routing reserves space for the arrowhead before the target', () => {
+  const body = {kind:'column',gap:64,children:[
+    {kind:'row',gap:100,children:[{kind:'node',id:'first',width:220,title:'First'},{kind:'node',id:'second',width:220,title:'Second'}]},
+    {kind:'node',id:'target',width:300,title:'Resource'}
+  ]};
+  const svg = renderDiagramSvg(JSON.stringify({body,edges:[{from:'first',to:'target',fromSide:'bottom',toSide:'top'}]}));
+  const points = svg.match(/<polyline points="([^"]+)"/)[1].split(' ').map(p=>p.split(',').map(Number));
+  const tip = svg.match(/<polygon points="([^"]+)"/)[1].split(' ').map(p=>p.split(',').map(Number));
+  assert.equal(tip[0][1] - tip[1][1],9);
+  assert.equal(points.at(-1)[0],points.at(-2)[0]);
+  assert.ok(points.at(-1)[1] - points.at(-2)[1] >= 8);
+});
