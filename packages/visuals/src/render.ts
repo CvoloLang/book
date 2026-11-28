@@ -385,6 +385,28 @@ function crosses(a: Point, b: Point, rect: Rect) {
   return true;
 }
 
+// Unframed annotations are soft obstacles, unlike actual memory and node
+// boundaries. Use the same estimated text metrics as the painter.
+function annotationBounds(layout: Layout): Rect[] {
+  const { element, bounds, lines } = layout;
+  if (element.kind !== 'text' && element.kind !== 'metric') return [];
+  let y = bounds.y + (bounds.h - linesHeight(lines)) / 2;
+  const align = element.style.textAlign ?? 'center';
+  return lines.flatMap((line) => {
+    const width = textWidth(line.value, line.size, line.mono);
+    const x = align === 'start' ? bounds.x : align === 'end'
+      ? bounds.x + bounds.w - width : bounds.x + (bounds.w - width) / 2;
+    const rect = { x: x - 4, y: y - 3, w: width + 8, h: line.size + 9 };
+    y += line.size + 6;
+    return line.value.trim() ? [rect] : [];
+  });
+}
+
+function edgeAnnotations(edge: Edge, items: Layout[]): Rect[] {
+  return items.filter(({ element }) => element.id !== edge.from && element.id !== edge.to)
+    .flatMap(annotationBounds);
+}
+
 function route(edge: Edge, items: Layout[], canvas: Rect): Point[] {
   const source = items.find((item) => item.element.id === edge.from)!;
   const target = items.find((item) => item.element.id === edge.to)!;
@@ -407,14 +429,16 @@ function route(edge: Edge, items: Layout[], canvas: Rect): Point[] {
   }
   const a = outward(start, fromSide), b = outward(end, toSide);
   const blockers = items.filter(({ element, bounds }) =>
-    (element.kind === 'group' || element.kind === 'node' || element.kind === 'text') &&
+    (element.kind === 'group' || element.kind === 'node' || element.kind === 'ellipse') &&
     bounds !== from && bounds !== to && !contains(bounds, from) && !contains(bounds, to) &&
     !contains(from, bounds) && !contains(to, bounds))
     .map(({ bounds }) => ({ x: bounds.x - 4, y: bounds.y - 4, w: bounds.w + 8, h: bounds.h + 8 }));
+  const annotations = edgeAnnotations(edge, items);
+  const corridors = [...blockers, ...annotations];
   // Try straight, elbow and corridor paths. Candidate corridors are derived
   // from obstacle boundaries; no pixel-based search or unbounded recursion.
-  const xs = [(a.x + b.x) / 2, 10, canvas.w - 10, ...blockers.flatMap((r) => [r.x - 3, r.x + r.w + 3])];
-  const ys = [(a.y + b.y) / 2, 10, canvas.h - 10, ...blockers.flatMap((r) => [r.y - 3, r.y + r.h + 3])];
+  const xs = [(a.x + b.x) / 2, 10, canvas.w - 10, ...corridors.flatMap((r) => [r.x - 3, r.x + r.w + 3])];
+  const ys = [(a.y + b.y) / 2, 10, canvas.h - 10, ...corridors.flatMap((r) => [r.y - 3, r.y + r.h + 3])];
   const candidates: Point[][] = [
     [a, { x: a.x, y: b.y }, b],
     [a, { x: b.x, y: a.y }, b],
@@ -430,7 +454,12 @@ function route(edge: Edge, items: Layout[], canvas: Rect): Point[] {
     if (points.slice(1).some((point, i) => obstacles.some((rect) => crosses(points[i], point, rect)))) continue;
     const length = points.slice(1).reduce((sum, point, i) =>
       sum + Math.abs(point.x - points[i].x) + Math.abs(point.y - points[i].y), 0) + 20 * (points.length - 2);
-    if (length < cost) { best = points; cost = length; }
+    // Prefer clear routes when comparable, but do not create several
+    // unnecessary bends just to avoid an unframed text annotation.
+    const intersections = annotations.filter((rect) =>
+      points.slice(1).some((point, i) => crosses(points[i], point, rect))).length;
+    const score = length + intersections * 8;
+    if (score < cost) { best = points; cost = score; }
   }
   if (!best) fail('cannot route ' + edge.from + ' → ' + edge.to + '; increase gaps or specify edge sides');
   return insetEdgeEndpoints(best, edge.gap);
@@ -546,7 +575,51 @@ function paintPlot(layout: Layout, theme: Theme) {
   return result;
 }
 
-function paintEdge(points: Point[], edge: Edge, theme: Theme) {
+/** Hide only the parts of a shaft behind text, not the underlying diagram.
+ * Geometric clipping avoids opaque backgrounds and document-wide SVG IDs.
+ */
+function visibleShaft(points: Point[], annotations: Rect[]): Point[][] {
+  if (!annotations.some((rect) => points.slice(1).some((p, i) => crosses(points[i], p, rect)))) {
+    return [points];
+  }
+  const result: Point[][] = [];
+  for (let i = 1; i < points.length; i++) {
+    const a = points[i - 1], b = points[i];
+    const vertical = a.x === b.x;
+    const start = vertical ? a.y : a.x;
+    const end = vertical ? b.y : b.x;
+    const length = Math.abs(end - start);
+    if (!length) continue;
+    const direction = Math.sign(end - start);
+    const pointAt = (distance: number): Point => vertical
+      ? { x: a.x, y: start + direction * distance }
+      : { x: start + direction * distance, y: a.y };
+    const hidden = annotations.filter((rect) => crosses(a, b, rect)).map((rect) => {
+      const low = vertical ? rect.y : rect.x;
+      const high = low + (vertical ? rect.h : rect.w);
+      return {
+        from: Math.max(0, Math.min((low - start) * direction, (high - start) * direction)),
+        to: Math.min(length, Math.max((low - start) * direction, (high - start) * direction))
+      };
+    }).sort((a, b) => a.from - b.from);
+    function append(from: number, to: number) {
+      if (to <= from) return;
+      const first = pointAt(from), last = pointAt(to);
+      const previous = result[result.length - 1];
+      if (previous && same(previous[previous.length - 1], first)) previous.push(last);
+      else result.push([first, last]);
+    }
+    let cursor = 0;
+    for (const interval of hidden) {
+      append(cursor, interval.from);
+      cursor = Math.max(cursor, interval.to);
+    }
+    append(cursor, length);
+  }
+  return result;
+}
+
+function paintEdge(points: Point[], edge: Edge, theme: Theme, annotations: Rect[]) {
   const end = points[points.length - 1], prev = points[points.length - 2];
   const dx = Math.sign(end.x - prev.x), dy = Math.sign(end.y - prev.y);
   const tipLength = edge.arrow ? Math.min(9, Math.abs(end.x - prev.x) + Math.abs(end.y - prev.y)) : 0;
@@ -556,8 +629,9 @@ function paintEdge(points: Point[], edge: Edge, theme: Theme) {
   const width = edge.style.strokeWidth ?? 1.8;
   const longest = points.slice(1).map((p, i) => ({a: points[i], b: p, length: Math.abs(p.x - points[i].x) + Math.abs(p.y - points[i].y)})).sort((a,b) => b.length - a.length)[0];
   const label = edge.label ? '<text x="' + ((longest.a.x + longest.b.x)/2 + (longest.a.x === longest.b.x ? 8 : 0)) + '" y="' + ((longest.a.y + longest.b.y)/2 - 7) + '" font-size="13" text-anchor="' + (longest.a.x === longest.b.x ? 'start' : 'middle') + '" fill="' + (edge.style.textColor ?? color(theme, 'foreground')) + '">' + escape(edge.label) + '</text>' : '';
-  return '<polyline points="' + [...points.slice(0, -1), base].map((p) => p.x + ',' + p.y).join(' ') +
-    '" fill="none" stroke="' + stroke + '" stroke-opacity="' + opacity + '" stroke-width="' + width + '" stroke-linejoin="round" stroke-linecap="round"' + (edge.style.dashed ? ' stroke-dasharray="6 4"' : '') + '/>' +
+  const shaft = visibleShaft([...points.slice(0, -1), base], annotations);
+  return shaft.map((part) => '<polyline points="' + part.map((p) => p.x + ',' + p.y).join(' ') +
+    '" fill="none" stroke="' + stroke + '" stroke-opacity="' + opacity + '" stroke-width="' + width + '" stroke-linejoin="round" stroke-linecap="round"' + (edge.style.dashed ? ' stroke-dasharray="6 4"' : '') + '/>').join('') +
     (edge.arrow ? '<polygon points="' + end.x + ',' + end.y + ' ' + (base.x - 4 * dy) + ',' + (base.y + 4 * dx) +
     ' ' + (base.x + 4 * dy) + ',' + (base.y - 4 * dx) + '" fill="' + stroke + '" fill-opacity="' + opacity + '"/>' : '') + label;
 }
@@ -590,7 +664,7 @@ function build(source: string, state: State = {}, embedded = false) {
       '" font-family="system-ui, sans-serif"><title>' + escape(title) + '</title><desc>' + escape(diagram.caption) + '</desc>' +
       '<rect x="1" y="1" width="' + (width - 2) + '" height="' + (height - 2) +
       '" rx="' + (diagram.style.radius ?? 12) + '" fill="' + (diagram.style.fill ?? color(theme, 'background')) + '" fill-opacity="' + (diagram.style.fillOpacity ?? 1) + '" stroke="' + (diagram.style.stroke ?? color(theme, 'frame')) + '" stroke-opacity="' + (diagram.style.strokeOpacity ?? 1) + '"/>' +
-      header + paint(layout, theme) + edges.map(({ edge, points }) => paintEdge(points, edge, theme)).join('') +
+      header + paint(layout, theme) + edges.map(({ edge, points }) => paintEdge(points, edge, theme, edgeAnnotations(edge, items))).join('') +
       footer + '</svg>';
   }
   return { svg, width, height, title: diagram.title, align: diagram.align };

@@ -235,3 +235,31 @@ test('arrow endpoints have a gap from both nodes; zero gap keeps contact', () =>
   assert.deepEqual(endpoints(render({gap:8})),[touching[0]+8,touching[1]-8]);
   assert.throws(()=>render({gap:-1}),/edge.gap/);
 });
+
+test('straight arrows pass behind unframed annotations without crossing their text', () => {
+  const body = {kind:'column',gap:20,children:[
+    {kind:'node',id:'a',title:'A',width:160},
+    {kind:'text',text:'A wide annotation'},
+    {kind:'node',id:'b',title:'B',width:160}
+  ]};
+  for (const theme of ['light','dark','book']) {
+    const svg = renderDiagramSvg(JSON.stringify({body,edges:[{from:'a',to:'b'}]}),theme);
+    const shafts = [...svg.matchAll(/<polyline points="([^"]+)"/g)].map(m=>m[1].split(' ').map(p=>p.split(',').map(Number)));
+    assert.equal(shafts.length,2);
+    assert.equal(new Set(shafts.flat().map(p=>p[0])).size,1);
+    assert.ok(shafts[0].at(-1)[1] < shafts[1][0][1]);
+    assert.match(svg,/<polygon /);
+  }
+});
+
+test('framed nodes remain hard routing obstacles', () => {
+  const body = {kind:'column',gap:30,children:[
+    {kind:'node',id:'a',title:'A',width:160},
+    {kind:'node',title:'Obstacle',width:160},
+    {kind:'node',id:'b',title:'B',width:160}
+  ]};
+  const svg = renderDiagramSvg(JSON.stringify({body,edges:[{from:'a',to:'b'}]}));
+  const shafts = [...svg.matchAll(/<polyline points="([^"]+)"/g)];
+  assert.equal(shafts.length,1);
+  assert.ok(new Set(shafts[0][1].split(' ').map(p=>p.split(',')[0])).size>1);
+});
