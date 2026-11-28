@@ -77,3 +77,9 @@ for (const lang of ['ru', 'en']) {
   assert.match(svg, />Деструктор<\/text>/);
   assert.match(svg, />Жизненный цикл экземпляра<\/text>/);
 });
+
+test('hex colors, opacity and edge styles are validated and exported', () => {
+ const svg = renderDiagramSvg(JSON.stringify({body:{kind:'node',title:'Custom',style:{fill:'#12345680',stroke:'#abc',fillOpacity:0.4,radius:12}}}));
+ assert.match(svg,/fill="#12345680" fill-opacity="0.4"/);
+ assert.throws(()=>renderDiagramSvg(JSON.stringify({body:{kind:'node',style:{fill:'url(javascript:alert(1))'}}})),/hex color/);
+});

@@ -10,6 +10,11 @@ type Side = 'top' | 'right' | 'bottom' | 'left';
 type Align = 'start' | 'center' | 'end';
 type Theme = 'book' | 'light' | 'dark';
 
+type Style = {
+  color?: string; fill?: string; stroke?: string; textColor?: string;
+  fillOpacity?: number; strokeOpacity?: number; strokeWidth?: number;
+  radius?: number; fontSize?: number; valueSize?: number; dashed?: boolean;
+};
 type Element = {
   kind: Kind;
   id?: string;
@@ -17,6 +22,7 @@ type Element = {
   code?: string;
   text?: string;
   tone: Tone;
+  style: Style;
   moved: boolean;
   width?: number;
   height?: number;
@@ -24,8 +30,8 @@ type Element = {
   align: Align;
   children: Element[];
 };
-type Edge = { from: string; to: string; tone: Tone; fromSide?: Side; toSide?: Side };
-type Diagram = { title: string; caption: string; body: Element; edges: Edge[] };
+type Edge = { from: string; to: string; tone: Tone; style: Style; label?: string; arrow: boolean; fromSide?: Side; toSide?: Side };
+type Diagram = { title: string; caption: string; width?: number; style: Style; body: Element; edges: Edge[] };
 type Point = { x: number; y: number };
 type Rect = Point & { w: number; h: number };
 type TextLine = { value: string; size: number; mono: boolean; strong: boolean; muted: boolean; strike: boolean };
@@ -91,20 +97,44 @@ function identifier(value: unknown, name: string): string | undefined {
   return id;
 }
 
+function hex(value: unknown, name: string) {
+  const result = string(value, name, 9);
+  if (result !== undefined && !/^#(?:[0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(result)) fail(name + ': expected a hex color');
+  return result;
+}
+
+function parseStyle(value: unknown): Style {
+  if (value === undefined) return {};
+  const item = record(value, 'style');
+  keys(item, ['color', 'fill', 'stroke', 'textColor', 'fillOpacity', 'strokeOpacity', 'strokeWidth', 'radius', 'fontSize', 'valueSize', 'dashed'], 'style');
+  if (item.dashed !== undefined && typeof item.dashed !== 'boolean') fail('style.dashed must be boolean');
+  return {
+    color: hex(item.color, 'style.color'), fill: hex(item.fill, 'style.fill'),
+    stroke: hex(item.stroke, 'style.stroke'), textColor: hex(item.textColor, 'style.textColor'),
+    fillOpacity: number(item.fillOpacity, 'style.fillOpacity', 0, 1),
+    strokeOpacity: number(item.strokeOpacity, 'style.strokeOpacity', 0, 1),
+    strokeWidth: number(item.strokeWidth, 'style.strokeWidth', 0, 8),
+    radius: number(item.radius, 'style.radius', 0, 80),
+    fontSize: number(item.fontSize, 'style.fontSize', 10, 32),
+    valueSize: number(item.valueSize, 'style.valueSize', 10, 40),
+    dashed: item.dashed === true
+  };
+}
+
 function parse(source: string): Diagram {
   if (source.length > 32000) fail('source exceeds 32,000 characters');
   let raw: unknown;
   try { raw = JSON.parse(source); }
   catch (error) { fail(error instanceof Error ? error.message : 'invalid JSON'); }
   const root = record(raw, 'root');
-  keys(root, ['title', 'caption', 'body', 'edges'], 'root');
+  keys(root, ['title', 'caption', 'body', 'edges', 'width', 'style'], 'root');
   const ids = new Set<string>();
   let count = 0;
 
   function element(value: unknown, depth: number): Element {
     if (++count > 60 || depth > 10) fail('maximum 60 elements and 10 nesting levels');
     const item = record(value, 'element');
-    keys(item, ['kind', 'id', 'title', 'code', 'text', 'tone', 'moved', 'width', 'height', 'gap', 'align', 'children'], 'element');
+    keys(item, ['kind', 'id', 'title', 'code', 'text', 'tone', 'moved', 'width', 'height', 'gap', 'align', 'children', 'style'], 'element');
     const kind = choice(item.kind, kinds, 'kind');
     if (!kind) fail('element kind is required');
     const id = identifier(item.id, 'id');
@@ -123,7 +153,7 @@ function parse(source: string): Diagram {
     return {
       kind, id, children,
       title: string(item.title, 'title'), code: string(item.code, 'code'), text: string(item.text, 'text'),
-      tone: choice(item.tone, tones, 'tone') ?? 'neutral',
+      tone: choice(item.tone, tones, 'tone') ?? 'neutral', style: parseStyle(item.style),
       moved: item.moved === true,
       width: number(item.width, 'width', 8, 1200), height: number(item.height, 'height', 0, 800),
       gap: number(item.gap, 'gap', 0, 160) ?? (kind === 'cells' ? 0 : 18),
@@ -137,15 +167,16 @@ function parse(source: string): Diagram {
   if (rawEdges.length > 40) fail('maximum 40 edges');
   const edges = rawEdges.map((value): Edge => {
     const edge = record(value, 'edge');
-    keys(edge, ['from', 'to', 'tone', 'fromSide', 'toSide'], 'edge');
+    keys(edge, ['from', 'to', 'tone', 'fromSide', 'toSide', 'style', 'label', 'arrow'], 'edge');
+    if (edge.arrow !== undefined && typeof edge.arrow !== 'boolean') fail('edge.arrow must be boolean');
     const from = identifier(edge.from, 'from');
     const to = identifier(edge.to, 'to');
     if (!from || !to || !ids.has(from) || !ids.has(to)) fail('edge references an unknown id');
     if (from === to) fail('self-edges are not supported');
-    return { from, to, tone: choice(edge.tone, tones, 'edge tone') ?? 'owner',
+    return { from, to, tone: choice(edge.tone, tones, 'edge tone') ?? 'owner', style: parseStyle(edge.style), label: string(edge.label, 'edge.label', 80), arrow: edge.arrow !== false,
       fromSide: choice(edge.fromSide, sides, 'fromSide'), toSide: choice(edge.toSide, sides, 'toSide') };
   });
-  return { title: string(root.title, 'title') ?? '', caption: string(root.caption, 'caption', 400) ?? '', body, edges };
+  return { title: string(root.title, 'title') ?? '', caption: string(root.caption, 'caption', 400) ?? '', width: number(root.width, 'width', 320, 1600), style: parseStyle(root.style), body, edges };
 }
 
 // Deterministic text metrics with deliberately generous glyph widths. This
@@ -180,9 +211,9 @@ function textLines(element: Element, width: number): TextLine[] {
     if (value === undefined) return;
     for (const part of wrap(value, width, size, mono)) lines.push({ value: part, size, mono, strong, muted, strike });
   }
-  add(element.title, 16, false, true, false);
-  add(element.code, 16, true, true, element.moved, element.moved);
-  add(element.text, 14, false, false, true);
+  add(element.title, element.style.fontSize ?? 16, false, true, false);
+  add(element.code, element.style.valueSize ?? element.style.fontSize ?? 16, true, true, element.moved, element.moved);
+  add(element.text, element.style.fontSize ?? 14, false, false, true);
   return lines;
 }
 
@@ -217,12 +248,15 @@ function measure(element: Element, minimumWidth = 0): Layout {
     ? Math.max(0, ...children.map((child) => child.bounds.h))
     : children.reduce((sum, child) => sum + child.bounds.h, 0) + Math.max(0, children.length - 1) * gap;
 
+  const titleSize = element.style.fontSize ?? 16;
+  const codeSize = element.style.valueSize ?? titleSize;
+  const textSize = element.style.fontSize ?? 14;
   const naturalText = Math.max(
-    textWidth(element.title ?? '', 16, false),
-    textWidth(element.code ?? '', 16, true),
-    textWidth(element.text ?? '', 14, false)
+    textWidth(element.title ?? '', titleSize, false),
+    textWidth(element.code ?? '', codeSize, true),
+    textWidth(element.text ?? '', textSize, false)
   );
-  const longestWord = Math.max(0, ...[ [element.title, 16, false], [element.code, 16, true], [element.text, 14, false] ].flatMap(([value, size, mono]) =>
+  const longestWord = Math.max(0, ...[ [element.title, titleSize, false], [element.code, codeSize, true], [element.text, textSize, false] ].flatMap(([value, size, mono]) =>
     String(value ?? '').split(/\s+/).map((word) => textWidth(word, Number(size), Boolean(mono)))));
   const w = Math.ceil(Math.max(minimumWidth, element.width ?? 0, framed ? 94 : 0,
     childWidth + 2 * padding, Math.min(naturalText, 310) + 2 * padding + 2, longestWord + 2 * padding + 2));
@@ -370,11 +404,11 @@ function color(theme: Theme, name: keyof Palette) {
     (theme === 'dark' ? dark : light)[name];
 }
 
-function paintText(lines: TextLine[], x: number, y: number, centered: boolean, theme: Theme, tone: Tone = 'neutral') {
+function paintText(lines: TextLine[], x: number, y: number, centered: boolean, theme: Theme, tone: Tone = 'neutral', textColor?: string) {
   return lines.map((line) => {
     y += line.size;
-    const fill = line.strike ? color(theme, 'muted') :
-      line.muted ? color(theme, tone === 'error' ? 'error' : 'muted') : color(theme, 'foreground');
+    const fill = textColor ?? (line.strike ? color(theme, 'muted') :
+      line.muted ? color(theme, tone === 'error' ? 'error' : 'muted') : color(theme, 'foreground'));
     const result = '<text x="' + x + '" y="' + y + '" font-size="' + line.size +
       '" font-weight="' + (line.strong ? '600' : '400') + '" text-anchor="' + (centered ? 'middle' : 'start') +
       '" fill="' + fill + '"' +
@@ -389,38 +423,44 @@ function paint(layout: Layout, theme: Theme, cell = false): string {
   const { element, bounds: r, lines, children } = layout;
   const { kind, tone, moved } = element;
   const framed = kind === 'node' || kind === 'group';
-  const stroke = color(theme, tone);
+  const style = element.style;
+  const accent = style.color ?? color(theme, tone);
+  const stroke = style.stroke ?? accent;
   const parts: string[] = [];
   if (framed) {
     parts.push('<rect x="' + r.x + '" y="' + r.y + '" width="' + r.w + '" height="' + r.h +
-      '" rx="' + (cell ? 0 : 8) + '" fill="' + stroke + '" fill-opacity="' + (kind === 'group' ? '.035' : '.085') +
-      '" stroke="' + stroke + '" stroke-width="1.5"' + (moved ? ' stroke-dasharray="6 4"' : '') + '/>');
+      '" rx="' + (style.radius ?? (cell ? 0 : 8)) + '" fill="' + (style.fill ?? accent) + '" fill-opacity="' + (style.fillOpacity ?? (kind === 'group' ? .035 : .085)) +
+      '" stroke="' + stroke + '" stroke-opacity="' + (style.strokeOpacity ?? 1) + '" stroke-width="' + (style.strokeWidth ?? 1.5) + '"' + (moved || style.dashed ? ' stroke-dasharray="6 4"' : '') + '/>');
   }
   if (lines.length) {
     const left = kind === 'group';
     const y = children.length ? r.y + (left ? 18 : 0) : r.y + (r.h - linesHeight(lines)) / 2;
-    parts.push(paintText(lines, left ? r.x + 18 : r.x + r.w / 2, y, !left, theme, moved ? 'error' : tone));
+    parts.push(paintText(lines, left ? r.x + 18 : r.x + r.w / 2, y, !left, theme, moved ? 'error' : tone, style.textColor));
   }
   for (const child of children) parts.push(paint(child, theme, kind === 'cells'));
   return parts.join('');
 }
 
-function paintEdge(points: Point[], tone: Tone, theme: Theme) {
+function paintEdge(points: Point[], edge: Edge, theme: Theme) {
   const end = points[points.length - 1], prev = points[points.length - 2];
   const dx = Math.sign(end.x - prev.x), dy = Math.sign(end.y - prev.y);
-  const tipLength = Math.min(9, Math.abs(end.x - prev.x) + Math.abs(end.y - prev.y));
+  const tipLength = edge.arrow ? Math.min(9, Math.abs(end.x - prev.x) + Math.abs(end.y - prev.y)) : 0;
   const base = { x: end.x - tipLength * dx, y: end.y - tipLength * dy };
-  const stroke = color(theme, tone);
+  const stroke = edge.style.stroke ?? edge.style.color ?? color(theme, edge.tone);
+  const opacity = edge.style.strokeOpacity ?? 1;
+  const width = edge.style.strokeWidth ?? 1.8;
+  const longest = points.slice(1).map((p, i) => ({a: points[i], b: p, length: Math.abs(p.x - points[i].x) + Math.abs(p.y - points[i].y)})).sort((a,b) => b.length - a.length)[0];
+  const label = edge.label ? '<text x="' + ((longest.a.x + longest.b.x)/2 + (longest.a.x === longest.b.x ? 8 : 0)) + '" y="' + ((longest.a.y + longest.b.y)/2 - 7) + '" font-size="13" text-anchor="' + (longest.a.x === longest.b.x ? 'start' : 'middle') + '" fill="' + (edge.style.textColor ?? color(theme, 'foreground')) + '">' + escape(edge.label) + '</text>' : '';
   return '<polyline points="' + [...points.slice(0, -1), base].map((p) => p.x + ',' + p.y).join(' ') +
-    '" fill="none" stroke="' + stroke + '" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>' +
-    '<polygon points="' + end.x + ',' + end.y + ' ' + (base.x - 4 * dy) + ',' + (base.y + 4 * dx) +
-    ' ' + (base.x + 4 * dy) + ',' + (base.y - 4 * dx) + '" fill="' + stroke + '"/>';
+    '" fill="none" stroke="' + stroke + '" stroke-opacity="' + opacity + '" stroke-width="' + width + '" stroke-linejoin="round" stroke-linecap="round"' + (edge.style.dashed ? ' stroke-dasharray="6 4"' : '') + '/>' +
+    (edge.arrow ? '<polygon points="' + end.x + ',' + end.y + ' ' + (base.x - 4 * dy) + ',' + (base.y + 4 * dx) +
+    ' ' + (base.x + 4 * dy) + ',' + (base.y - 4 * dx) + '" fill="' + stroke + '" fill-opacity="' + opacity + '"/>' : '') + label;
 }
 
 function build(source: string) {
   const diagram = parse(source);
   const layout = measure(diagram.body);
-  const width = Math.max(320, layout.bounds.w + 48,
+  const width = Math.max(diagram.width ?? 320, layout.bounds.w + 48,
     Math.min(800, textWidth(diagram.title, 18, false) + 52),
     ...diagram.title.split(/\s+/).map((word) => Math.ceil(textWidth(word, 18, false)) + 52),
     ...diagram.caption.split(/\s+/).map((word) => Math.ceil(textWidth(word, 13, false)) + 52));
@@ -444,8 +484,8 @@ function build(source: string) {
       width + ' ' + height + '" role="img" aria-label="' + escape(title) +
       '" font-family="system-ui, sans-serif"><title>' + escape(title) + '</title><desc>' + escape(diagram.caption) + '</desc>' +
       '<rect x="1" y="1" width="' + (width - 2) + '" height="' + (height - 2) +
-      '" rx="12" fill="' + color(theme, 'background') + '" stroke="' + color(theme, 'frame') + '"/>' +
-      header + paint(layout, theme) + edges.map(({ edge, points }) => paintEdge(points, edge.tone, theme)).join('') +
+      '" rx="' + (diagram.style.radius ?? 12) + '" fill="' + (diagram.style.fill ?? color(theme, 'background')) + '" fill-opacity="' + (diagram.style.fillOpacity ?? 1) + '" stroke="' + (diagram.style.stroke ?? color(theme, 'frame')) + '" stroke-opacity="' + (diagram.style.strokeOpacity ?? 1) + '"/>' +
+      header + paint(layout, theme) + edges.map(({ edge, points }) => paintEdge(points, edge, theme)).join('') +
       footer + '</svg>';
   }
   return { svg, width, height };
