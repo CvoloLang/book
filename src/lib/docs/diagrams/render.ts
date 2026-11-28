@@ -642,11 +642,11 @@ export function renderDiagramFigure(source: string, contextKey: string, id: stri
     '<summary aria-label="' + actionsLabel + '" title="' + actionsLabel + '">' + toolbarIcon('more') + '</summary>' +
     '<div class="book-diagram-menu-panel">' +
     link('light', ru ? 'Скачать SVG (светлая)' : 'Download SVG (light)') + link('dark', ru ? 'Скачать SVG (тёмная)' : 'Download SVG (dark)') +
-    '<button type="button" data-diagram-size aria-pressed="false" data-fit-label="' + (ru ? 'Вписать в ширину' : 'Fit to width') +
-    '" data-native-label="' + (ru ? 'Исходный размер' : 'Original size') + '">' + toolbarIcon('expand') + '<span>' +
-    (ru ? 'Исходный размер' : 'Original size') + '</span></button></div></details></div>';
+    '<button type="button" data-diagram-size>' + toolbarIcon('expand') +
+    '<span class="book-diagram-show-native">' + (ru ? 'Исходный размер' : 'Original size') + '</span>' +
+    '<span class="book-diagram-show-fit">' + (ru ? 'Вписать в ширину' : 'Fit to width') + '</span></button></div></details></div>';
   return '<figure class="book-diagram' + (controls.length ? ' book-diagram-interactive' : '') + '" style="--book-diagram-width:' + preferredWidth + 'px"' + interactive + '>' + toolbar +
     (controls.length ? '<div class="book-diagram-controls">' + renderControls(controls,filename) + '</div>' : '') +
-    '<div class="book-diagram-scroll" aria-label="' + (ru ? 'Схема' : 'Diagram') + '">' +
+    '<div class="book-diagram-scroll" role="region" tabindex="0" aria-label="' + (ru ? 'Схема' : 'Diagram') + '">' +
     renderDiagramView(source, state).svg + '</div><div data-diagram-error role="status" hidden></div></figure>';
 }

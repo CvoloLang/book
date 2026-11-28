@@ -93,16 +93,13 @@ export function enhanceDiagrams(article: HTMLElement) {
     if (sizeButton) {
       const figure = menu.closest<HTMLElement>('.book-diagram');
       if (!figure) return;
-      const native = figure.toggleAttribute('data-diagram-native-size');
-      sizeButton.setAttribute('aria-pressed', String(native));
-      const label = sizeButton.querySelector('span');
-      if (label) label.textContent = (native ? sizeButton.dataset.fitLabel : sizeButton.dataset.nativeLabel) ?? '';
       const scroll = figure.querySelector<HTMLElement>('.book-diagram-scroll');
-      if (native) scroll?.setAttribute('tabindex', '0');
-      else {
-        scroll?.removeAttribute('tabindex');
-        if (scroll) scroll.scrollLeft = 0;
-      }
+      if (!scroll) return;
+      // Read the current CSS mode so the responsive breakpoint has one source
+      // of truth. A manual choice overrides the default for this figure only.
+      const native = owner.defaultView?.getComputedStyle(scroll).overflowX === 'auto';
+      figure.dataset.diagramSizeMode = native ? 'fit' : 'native';
+      if (native) scroll.scrollLeft = 0;
       closeMenu(menu, true);
     } else if (target.closest('[data-diagram-export]')) {
       closeMenu(menu, true);

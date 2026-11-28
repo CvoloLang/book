@@ -168,9 +168,11 @@ test('diagram technical actions are in a top disclosure with portable downloads'
     assert.match(figure, /<summary aria-label="[^"]+"/);
     assert.ok(figure.indexOf('book-diagram-toolbar') < figure.indexOf('book-diagram-scroll'));
     assert.equal((figure.match(/data-diagram-export=/g) ?? []).length, 2);
-    assert.match(figure, /<button type="button" data-diagram-size aria-pressed="false"/);
+    assert.match(figure, /<button type="button" data-diagram-size>/);
+    assert.match(figure, /class="book-diagram-show-native"/);
+    assert.match(figure, /class="book-diagram-show-fit"/);
     assert.ok(!figure.includes('book-diagram-actions'));
-    assert.ok(!figure.includes('tabindex="0"'));
+    assert.match(figure, /class="book-diagram-scroll" role="region" tabindex="0"/);
   }
 });
 

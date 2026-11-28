@@ -80,9 +80,34 @@
 
 .book-diagram { box-sizing: border-box; }
 
-/* Preserve the natural SVG dimensions only when the reader requests them. */
-.book-diagram[data-diagram-native-size] .book-diagram-scroll { overflow-x: auto; }
-.book-diagram[data-diagram-native-size] .book-diagram-scroll > svg { width: auto; max-width: none; }
+/* Keep readable, natural-size diagrams on phones. Tablets and larger
+   viewports fit the available article width, even when sidebars change.
+   A reader's explicit choice overrides either responsive default. */
+.book-diagram-scroll { overflow-x: visible; }
+.book-diagram-show-fit { display: none; }
+.book-diagram[data-diagram-size-mode="native"] .book-diagram-scroll {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+.book-diagram[data-diagram-size-mode="native"] .book-diagram-scroll > svg {
+  width: auto;
+  max-width: none;
+}
+.book-diagram[data-diagram-size-mode="native"] .book-diagram-show-native { display: none; }
+.book-diagram[data-diagram-size-mode="native"] .book-diagram-show-fit { display: inline; }
+
+@media (max-width: 767px) {
+  .book-diagram:not([data-diagram-size-mode="fit"]) .book-diagram-scroll {
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+  }
+  .book-diagram:not([data-diagram-size-mode="fit"]) .book-diagram-scroll > svg {
+    width: auto;
+    max-width: none;
+  }
+  .book-diagram:not([data-diagram-size-mode="fit"]) .book-diagram-show-native { display: none; }
+  .book-diagram:not([data-diagram-size-mode="fit"]) .book-diagram-show-fit { display: inline; }
+}
 
 /* Technical actions are separated from the visualization controls. */
 .book-diagram-toolbar {
