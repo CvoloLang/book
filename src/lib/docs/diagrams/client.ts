@@ -72,9 +72,55 @@ export function enhanceDiagrams(article: HTMLElement) {
     if (figure && pending.delete(figure)) redraw(figure);
     if (link?.getAttribute('aria-disabled') === 'true') event.preventDefault();
   }
+  // Native details handles Enter/Space and works before hydration. The
+  // delegated listeners add dismissal and the optional original-size view.
+  const owner = article.ownerDocument;
+  function closeMenu(menu: HTMLDetailsElement, restoreFocus = false) {
+    menu.open = false;
+    if (restoreFocus) menu.querySelector('summary')?.focus();
+  }
+  function onMenuClick(event: MouseEvent) {
+    if (!(event.target instanceof Element)) return;
+    const target = event.target;
+    const menu = target.closest<HTMLDetailsElement>('.book-diagram-menu');
+    for (const open of article.querySelectorAll<HTMLDetailsElement>('.book-diagram-menu[open]')) {
+      if (open !== menu) closeMenu(open);
+    }
+    if (!menu || !article.contains(menu)) return;
+    const sizeButton = target.closest<HTMLButtonElement>('[data-diagram-size]');
+    if (sizeButton) {
+      const figure = menu.closest<HTMLElement>('.book-diagram');
+      if (!figure) return;
+      const native = figure.toggleAttribute('data-diagram-native-size');
+      sizeButton.setAttribute('aria-pressed', String(native));
+      const label = sizeButton.querySelector('span');
+      if (label) label.textContent = (native ? sizeButton.dataset.fitLabel : sizeButton.dataset.nativeLabel) ?? '';
+      const scroll = figure.querySelector<HTMLElement>('.book-diagram-scroll');
+      if (native) scroll?.setAttribute('tabindex', '0');
+      else {
+        scroll?.removeAttribute('tabindex');
+        if (scroll) scroll.scrollLeft = 0;
+      }
+      closeMenu(menu, true);
+    } else if (target.closest('[data-diagram-export]')) {
+      closeMenu(menu, true);
+    }
+  }
+  function onMenuKeydown(event: KeyboardEvent) {
+    if (event.key !== 'Escape') return;
+    const menu = article.querySelector<HTMLDetailsElement>('.book-diagram-menu[open]');
+    if (!menu) return;
+    const restoreFocus = menu.contains(owner.activeElement);
+    closeMenu(menu, restoreFocus);
+    event.preventDefault();
+  }
+  owner.addEventListener('click', onMenuClick);
+  owner.addEventListener('keydown', onMenuKeydown);
   article.addEventListener('click',beforeDownload);
   article.addEventListener('input',onInput);
   return () => {
+    owner.removeEventListener('click', onMenuClick);
+    owner.removeEventListener('keydown', onMenuKeydown);
     article.removeEventListener('click',beforeDownload);
     article.removeEventListener('input',onInput);
     if (frame) cancelAnimationFrame(frame);

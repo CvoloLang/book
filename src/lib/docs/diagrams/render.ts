@@ -602,6 +602,19 @@ function renderControls(controls: Control[], id: string) {
   }).join('');
 }
 
+// The toolbar is HTML, not part of the exported SVG. Keep its actions
+// accessible without introducing an additional UI dependency.
+function toolbarIcon(name: 'more' | 'download' | 'expand') {
+  const content = name === 'more'
+    ? '<circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>'
+    : name === 'download'
+      ? '<path d="M12 3v12m-5-5 5 5 5-5M4 16v4h16v-4"/>'
+      : '<path d="M8 4H4v4m12-4h4v4M4 16v4h4m12-4v4h-4"/>';
+  return '<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="' +
+    (name === 'more' ? 'currentColor' : 'none') + '" stroke="' +
+    (name === 'more' ? 'none' : 'currentColor') + '" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + content + '</svg>';
+}
+
 export function renderDiagramFigure(source: string, contextKey: string, id: string): string {
   const controls = getControls(source);
   const state = getState(controls);
@@ -613,12 +626,19 @@ export function renderDiagramFigure(source: string, contextKey: string, id: stri
   const filename = 'diagram-' + id.replace(/[^a-zA-Z0-9_-]/g, '-');
   function link(theme: 'light' | 'dark', label: string) {
     return '<a data-diagram-export="' + theme + '" download="' + filename + '-' + theme + '.svg" href="data:image/svg+xml;charset=utf-8,' +
-      encodeURIComponent(diagram.svg(theme)) + '">' + label + '</a>';
+      encodeURIComponent(diagram.svg(theme)) + '">' + toolbarIcon('download') + '<span>' + label + '</span></a>';
   }
   const interactive = controls.length ? ' data-diagram-source="' + escape(source) + '"' : '';
-  return '<figure class="book-diagram' + (controls.length ? ' book-diagram-interactive' : '') + '" style="--book-diagram-width:' + preferredWidth + 'px"' + interactive + '>' +
+  const actionsLabel = ru ? 'Действия со схемой' : 'Diagram actions';
+  const toolbar = '<div class="book-diagram-toolbar"><details class="book-diagram-menu">' +
+    '<summary aria-label="' + actionsLabel + '" title="' + actionsLabel + '">' + toolbarIcon('more') + '</summary>' +
+    '<div class="book-diagram-menu-panel">' +
+    link('light', ru ? 'SVG (светлая)' : 'SVG (light)') + link('dark', ru ? 'SVG (тёмная)' : 'SVG (dark)') +
+    '<button type="button" data-diagram-size aria-pressed="false" data-fit-label="' + (ru ? 'Вписать в ширину' : 'Fit to width') +
+    '" data-native-label="' + (ru ? 'Исходный размер' : 'Original size') + '">' + toolbarIcon('expand') + '<span>' +
+    (ru ? 'Исходный размер' : 'Original size') + '</span></button></div></details></div>';
+  return '<figure class="book-diagram' + (controls.length ? ' book-diagram-interactive' : '') + '" style="--book-diagram-width:' + preferredWidth + 'px"' + interactive + '>' + toolbar +
     (controls.length ? '<div class="book-diagram-controls">' + renderControls(controls,filename) + '</div>' : '') +
     '<div class="book-diagram-scroll" aria-label="' + (ru ? 'Схема' : 'Diagram') + '">' +
-    diagram.svg('book') + '</div><div data-diagram-error role="status" hidden></div><div class="book-diagram-actions">' +
-    link('light', ru ? 'SVG (светлая)' : 'SVG (light)') + link('dark', ru ? 'SVG (тёмная)' : 'SVG (dark)') + '</div></figure>';
+    diagram.svg('book') + '</div><div data-diagram-error role="status" hidden></div></figure>';
 }

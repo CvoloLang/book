@@ -41,18 +41,7 @@
   max-width: 100%;
   margin-inline: auto;
 }
-.book-diagram-actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: .85rem;
-  margin-top: .35rem;
-  font-size: .75rem;
-}
-
 .book-diagram { width: min(100%, var(--book-diagram-width, 100%)); min-width: 0; max-width: 100%; margin-inline: auto; }
-.book-diagram-actions a { padding: .25rem .55rem; border: 1px solid var(--book-diagram-frame); border-radius: .375rem; text-decoration: none; }
-.book-diagram-actions a:hover { border-color: var(--book-diagram-owner); }
 
 /* Visible, keyboard-accessible choice pills. Controls never sit inside SVG. */
 .book-diagram-interactive { width: 100%; }
@@ -73,7 +62,6 @@
 .book-diagram-control input[type=range] { width: 100%; accent-color: var(--book-diagram-owner); cursor: pointer; }
 .book-diagram-control select { border: 1px solid var(--book-diagram-frame); border-radius: .4rem; padding: .45rem; color: var(--book-diagram-foreground); background: var(--book-diagram-background); }
 .book-diagram [data-diagram-error] { color: var(--book-diagram-error); font-size: .85rem; margin-top: .5rem; }
-.book-diagram-actions a[aria-disabled=true] { opacity: .5; pointer-events: none; }
 
 .book-diagram-interactive {
   padding: .65rem; border: 1px solid var(--book-diagram-frame);
@@ -91,8 +79,86 @@
 }
 
 .book-diagram { box-sizing: border-box; }
-.book-diagram-actions a { color: var(--book-diagram-owner); }
 
 /* Preserve the natural SVG dimensions only when the reader requests them. */
 .book-diagram[data-diagram-native-size] .book-diagram-scroll { overflow-x: auto; }
 .book-diagram[data-diagram-native-size] .book-diagram-scroll > svg { width: auto; max-width: none; }
+
+/* Technical actions are separated from the visualization controls. */
+.book-diagram-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  min-width: 0;
+  margin-bottom: .25rem;
+}
+.book-diagram-menu { position: relative; }
+.book-diagram-menu[open] { z-index: 5; }
+.book-diagram-menu > summary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid transparent;
+  border-radius: .5rem;
+  color: var(--book-diagram-muted);
+  list-style: none;
+  cursor: pointer;
+}
+.book-diagram-menu > summary::-webkit-details-marker { display: none; }
+.book-diagram-menu > summary::marker { content: ''; }
+.book-diagram-menu > summary:hover,
+.book-diagram-menu[open] > summary {
+  color: var(--book-diagram-foreground);
+  border-color: var(--book-diagram-frame);
+  background: color-mix(in srgb, var(--book-diagram-neutral) 10%, transparent);
+}
+.book-diagram-menu-panel {
+  position: absolute;
+  inset-block-start: calc(100% + .3rem);
+  inset-inline-end: 0;
+  width: max-content;
+  max-width: calc(100vw - 3rem);
+  box-sizing: border-box;
+  padding: .3rem;
+  border: 1px solid var(--book-diagram-frame);
+  border-radius: .65rem;
+  background: var(--book-diagram-background);
+  box-shadow: 0 8px 24px rgb(0 0 0 / .16);
+}
+.book-diagram .book-diagram-menu-panel > :is(a, button) {
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+  width: 100%;
+  box-sizing: border-box;
+  padding: .5rem .65rem;
+  border: 0;
+  border-radius: .35rem;
+  background: transparent;
+  color: var(--book-diagram-foreground);
+  text-align: start;
+  text-decoration: none;
+  font: inherit;
+  font-size: .84rem;
+  line-height: 1.4;
+  cursor: pointer;
+}
+.book-diagram-menu-panel > :is(a, button) > svg { flex: none; }
+.book-diagram .book-diagram-menu-panel > :is(a, button):hover {
+  background: color-mix(in srgb, var(--book-diagram-neutral) 12%, transparent);
+}
+.book-diagram-menu > summary:focus-visible,
+.book-diagram-menu-panel > :is(a, button):focus-visible {
+  outline: 2px solid var(--book-diagram-owner);
+  outline-offset: 1px;
+}
+.book-diagram-menu-panel > a[aria-disabled=true] {
+  opacity: .45;
+  cursor: not-allowed;
+}
+@media (pointer: coarse) {
+  .book-diagram-menu > summary { width: 2.75rem; height: 2.75rem; }
+  .book-diagram .book-diagram-menu-panel > :is(a, button) { min-height: 2.75rem; }
+}
