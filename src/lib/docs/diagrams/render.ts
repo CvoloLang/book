@@ -15,7 +15,7 @@ type Theme = 'book' | 'light' | 'dark';
 type Style = {
   color?: string; fill?: string; stroke?: string; textColor?: string;
   fillOpacity?: number; strokeOpacity?: number; strokeWidth?: number;
-  radius?: number; fontSize?: number; valueSize?: number; dashed?: boolean;
+  radius?: number; fontSize?: number; valueSize?: number; dashed?: boolean; textAlign?: Align;
 };
 type Segment = { name: string; bytes: number; tone: Tone; style: Style; padding: boolean };
 type Element = {
@@ -113,7 +113,7 @@ function hex(value: unknown, name: string) {
 function parseStyle(value: unknown): Style {
   if (value === undefined) return {};
   const item = record(value, 'style');
-  keys(item, ['color', 'fill', 'stroke', 'textColor', 'fillOpacity', 'strokeOpacity', 'strokeWidth', 'radius', 'fontSize', 'valueSize', 'dashed'], 'style');
+  keys(item, ['color', 'fill', 'stroke', 'textColor', 'fillOpacity', 'strokeOpacity', 'strokeWidth', 'radius', 'fontSize', 'valueSize', 'dashed', 'textAlign'], 'style');
   if (item.dashed !== undefined && typeof item.dashed !== 'boolean') fail('style.dashed must be boolean');
   return {
     color: hex(item.color, 'style.color'), fill: hex(item.fill, 'style.fill'),
@@ -124,7 +124,7 @@ function parseStyle(value: unknown): Style {
     radius: number(item.radius, 'style.radius', 0, 80),
     fontSize: number(item.fontSize, 'style.fontSize', 10, 32),
     valueSize: number(item.valueSize, 'style.valueSize', 10, 40),
-    dashed: item.dashed === true
+    dashed: item.dashed === true, textAlign: choice(item.textAlign, aligns, 'style.textAlign')
   };
 }
 
@@ -238,7 +238,7 @@ function textLines(element: Element, width: number): TextLine[] {
   const lines: TextLine[] = [];
   function add(value: string | undefined, size: number, mono: boolean, strong: boolean, muted: boolean, strike = false) {
     if (value === undefined) return;
-    for (const part of wrap(value, width, size, mono)) lines.push({ value: part, size, mono, strong, muted, strike });
+    for (const part of (mono ? value.split('\n') : wrap(value, width, size, mono))) lines.push({ value: part, size, mono, strong, muted, strike });
   }
   add(element.title, element.style.fontSize ?? 16, false, true, false);
   add(element.code, element.style.valueSize ?? (element.kind === 'metric' ? 28 : element.style.fontSize ?? 16), true, true, element.moved, element.moved);
@@ -289,15 +289,16 @@ function measure(element: Element, minimumWidth = 0): Layout {
   const titleSize = element.style.fontSize ?? 16;
   const codeSize = element.style.valueSize ?? (kind === 'metric' ? 28 : titleSize);
   const textSize = element.style.fontSize ?? 14;
+  const codeWidth = Math.max(0, ...(element.code ?? '').split('\n').map((line) => textWidth(line, codeSize, true)));
   const naturalText = Math.max(
     textWidth(element.title ?? '', titleSize, false),
-    textWidth(element.code ?? '', codeSize, true),
+    codeWidth,
     textWidth(element.text ?? '', textSize, false)
   );
   const longestWord = Math.max(0, ...[ [element.title, titleSize, false], [element.code, codeSize, true], [element.text, textSize, false] ].flatMap(([value, size, mono]) =>
     String(value ?? '').split(/\s+/).map((word) => textWidth(word, Number(size), Boolean(mono)))));
   const w = Math.ceil(Math.max(minimumWidth, element.width ?? 0, framed && element.width === undefined ? 94 : 0,
-    childWidth + 2 * padding, Math.min(naturalText, 310) + 2 * padding + 2, longestWord + 2 * padding + 2));
+    childWidth + 2 * padding, Math.min(naturalText, 310) + 2 * padding + 2, codeWidth + 2 * padding + 2, longestWord + 2 * padding + 2));
   const lines = textLines(element, Math.max(20, w - 2 * padding));
   const header = linesHeight(lines);
   const separation = header && children.length ? 12 : 0;
@@ -442,15 +443,15 @@ function color(theme: Theme, name: keyof Palette) {
     (theme === 'dark' ? dark : light)[name];
 }
 
-function paintText(lines: TextLine[], x: number, y: number, centered: boolean, theme: Theme, tone: Tone = 'neutral', textColor?: string) {
+function paintText(lines: TextLine[], x: number, y: number, centered: boolean, theme: Theme, tone: Tone = 'neutral', textColor?: string, align?: Align) {
   return lines.map((line) => {
     y += line.size;
     const fill = textColor ?? (line.strike ? color(theme, 'muted') :
       line.muted ? color(theme, tone === 'error' ? 'error' : 'muted') : color(theme, 'foreground'));
     const result = '<text x="' + x + '" y="' + y + '" font-size="' + line.size +
-      '" font-weight="' + (line.strong ? '600' : '400') + '" text-anchor="' + (centered ? 'middle' : 'start') +
+      '" font-weight="' + (line.strong ? '600' : '400') + '" text-anchor="' + (align === 'end' ? 'end' : align === 'start' ? 'start' : centered ? 'middle' : 'start') +
       '" fill="' + fill + '"' +
-      (line.mono ? ' font-family="ui-monospace, SFMono-Regular, Consolas, Liberation Mono, monospace"' : '') +
+      (line.mono ? ' font-family="ui-monospace, SFMono-Regular, Consolas, Liberation Mono, monospace" xml:space="preserve"' : '') +
       (line.strike ? ' text-decoration="line-through"' : '') + '>' + escape(line.value) + '</text>';
     y += 6;
     return result;
@@ -475,9 +476,11 @@ function paint(layout: Layout, theme: Theme, cell = false): string {
       '" stroke="' + stroke + '" stroke-opacity="' + (style.strokeOpacity ?? 1) + '" stroke-width="' + (style.strokeWidth ?? 1.5) + '"' + (moved || style.dashed ? ' stroke-dasharray="6 4"' : '') + '/>');
   }
   if (lines.length) {
-    const left = kind === 'group';
+    const left = kind === 'group' || style.textAlign === 'start';
     const y = children.length ? r.y + (kind === 'ellipse' ? 44 : left ? 18 : 0) : r.y + (r.h - linesHeight(lines)) / 2;
-    parts.push(paintText(lines, left ? r.x + 18 : r.x + r.w / 2, y, !left, theme, moved ? 'error' : tone, style.textColor));
+    const inset = kind === 'group' ? 18 : kind === 'node' ? 14 : 0;
+    const x = style.textAlign === 'end' ? r.x + r.w - inset : left ? r.x + inset : r.x + r.w / 2;
+    parts.push(paintText(lines, x, y, !left, theme, moved ? 'error' : tone, style.textColor, style.textAlign));
   }
   for (const child of children) parts.push(paint(child, theme, kind === 'cells'));
   return parts.join('');

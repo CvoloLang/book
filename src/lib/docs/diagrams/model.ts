@@ -249,11 +249,19 @@ function expand(value: unknown, context: Context, depth: number, budget: { remai
     if (!Array.isArray(result.rows) || !result.rows.length || result.rows.length > 24) fail('table requires 1–24 rows');
     if (!Array.isArray(result.widths) || !result.widths.length || result.widths.length > 8) fail('table requires column widths');
     const widths = result.widths.map((width) => finite(width,'column width'));
-    const rows = result.rows.map((row) => {
+    // All rows share measured column widths, including long cell labels.
+    for (const row of result.rows) {
+      if (!Array.isArray(row) || row.length !== widths.length) fail('table row length differs from widths');
+      for (const [i, cell] of row.entries()) {
+        if (typeof cell !== 'string' && typeof cell !== 'number') fail('table cells must be strings or numbers');
+        widths[i] = Math.max(widths[i], Math.ceil(String(cell).length * 14 * .9 + 30));
+      }
+    }
+    const rows = result.rows.map((row,index) => {
       if (!Array.isArray(row) || row.length !== widths.length) fail('table row length differs from widths');
       return {kind:'row',gap:0,children:row.map((cell,i) => {
         if (typeof cell !== 'string' && typeof cell !== 'number') fail('table cells must be strings or numbers');
-        return {kind:'node',title:String(cell),width:widths[i],height:42,style:{fillOpacity:0,strokeOpacity:.3,radius:0,fontSize:14}};
+        return {kind:'node',title:String(cell),width:widths[i],height:42,style:{fillOpacity:index === 0 ? .06 : 0,strokeOpacity:.3,radius:0,fontSize:14,textAlign:i === widths.length - 1 ? 'end' : 'start'}};
       })};
     });
     const {rows: _rows, widths: _widths, ...rest} = result;
@@ -271,5 +279,15 @@ export function materializeDiagram(source: string, overrides: State = {}): strin
   if (Object.keys(data).length > 64) fail('at most 64 named data entries');
   for (const key of Object.keys(data)) validId(key);
   const context: Context = {state,data,cache:new Map(),active:new Set()};
-  return JSON.stringify(expand(diagram,context,0,{remaining:16000}));
+  const resolved = expand(diagram,context,0,{remaining:16000});
+  // References may share a subtree. Bound serialization too, so a graph of
+  // repeated references cannot expand into an unbounded JSON document.
+  let remaining = 64000;
+  const result = JSON.stringify(resolved,(key,value) => {
+    remaining -= key.length + (typeof value === 'string' ? value.length : 8);
+    if (remaining < 0) fail('expanded diagram exceeds size limit');
+    return value;
+  });
+  if (result.length > 32000) fail('expanded diagram exceeds 32,000 characters');
+  return result;
 }

@@ -146,3 +146,12 @@ test('standalone page contains controls, inline SVG, and an isolated runtime', a
   assert.ok(!page.includes('src="http'));
   assert.equal((page.match(/<\/script>/gi) ?? []).length,1);
 });
+
+test('monospace text preserves indentation and table column alignment', () => {
+  const svg = renderDiagramSvg(JSON.stringify({body:{kind:'node',code:'int X;\n    int Y;'}}));
+  assert.match(svg,/xml:space="preserve"/);
+  assert.match(svg,/>    int Y;<\/text>/);
+  const table = renderDiagramSvg(JSON.stringify({body:{kind:'table',widths:[70,70],rows:[['Field','Size'],['A long field name',4],['X',8]]}}));
+  assert.match(table,/text-anchor="end"/);
+  assert.match(table,/text-anchor="start"/);
+});
