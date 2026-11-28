@@ -1,5 +1,5 @@
 @import "tailwindcss";
-@import "./lib/docs/diagrams/diagram.css";
+@import "../packages/visuals/src/diagram.css";
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {

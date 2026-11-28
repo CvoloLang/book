@@ -7,7 +7,7 @@
   import type { TopicPage } from '$lib/docs/types';
   import siteConfig from '$lib/generated/site-config.json';
   import { t } from '$lib/i18n';
-  import { enhanceDiagrams } from '$lib/docs/diagrams/client';
+  import { enhanceDiagrams } from '../../../../../../packages/visuals/src/client.ts';
 
   let { data }: { data: { topic: TopicPage; html: string } } = $props();
   let mobileNav = $state(false);

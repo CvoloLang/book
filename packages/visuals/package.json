@@ -1,0 +1,15 @@
+{
+  "name": "@cvolo/visuals",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Declarative technical diagrams and interactive visualizations.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./client": "./src/client.ts",
+    "./styles.css": "./src/diagram.css"
+  },
+  "engines": {
+    "node": ">=22.12"
+  }
+}

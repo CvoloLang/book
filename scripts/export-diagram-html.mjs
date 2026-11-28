@@ -2,7 +2,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { extractDiagrams } from './export-diagrams.mjs';
-import { renderDiagramFigure } from '../src/lib/docs/diagrams/render.ts';
+import { renderDiagramFigure } from '../packages/visuals/src/index.ts';
 
 /** Compose a standalone page from trusted renderer output and bundled runtime. */
 export function composeStandaloneHtml(figures, css, script, lang = 'en') {
@@ -24,7 +24,7 @@ export function composeStandaloneHtml(figures, css, script, lang = 'en') {
 async function bundleClient() {
   // Vite is already a dev dependency of Book; no new runtime dependencies.
   const { build } = await import('vite');
-  const entry = fileURLToPath(new URL('../src/lib/docs/diagrams/standalone.ts', import.meta.url));
+  const entry = fileURLToPath(new URL('../packages/visuals/src/standalone.ts', import.meta.url));
   const result = await build({
     configFile: false,
     logLevel: 'error',
@@ -48,10 +48,10 @@ async function main() {
     ? [{ line:1, source:input }] : extractDiagrams(input);
   if (!blocks.length) throw new Error('No diagram blocks found in ' + sourceFile);
   const figures = blocks.map((block,i) => {
-    try { return renderDiagramFigure(block.source,'standalone/' + lang,String(i+1)); }
+    try { return renderDiagramFigure(block.source,lang,String(i+1)); }
     catch (error) { throw new Error(sourceFile + ':' + block.line + ': ' + error.message, { cause:error }); }
   });
-  const css = await readFile(new URL('../src/lib/docs/diagrams/diagram.css',import.meta.url),'utf8');
+  const css = await readFile(new URL('../packages/visuals/src/diagram.css',import.meta.url),'utf8');
   const script = await bundleClient();
   const page = composeStandaloneHtml(figures,css,script,lang);
   await mkdir(path.dirname(outputFile),{recursive:true});

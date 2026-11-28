@@ -624,14 +624,14 @@ function toolbarIcon(name: 'more' | 'download' | 'expand' | 'copy') {
     (name === 'more' ? 'none' : 'currentColor') + '" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + content + '</svg>';
 }
 
-export function renderDiagramFigure(source: string, contextKey: string, id: string): string {
+export function renderDiagramFigure(source: string, locale: 'ru' | 'en', id: string): string {
   const controls = getControls(source);
   const state = getState(controls);
   const diagram = build(source,state);
   // Validate every finite option combination (slider uses its default).
   let preferredWidth = diagram.width;
   for (const variant of getVariants(source)) preferredWidth = Math.max(preferredWidth, build(source,variant).width);
-  const ru = contextKey.split('/').at(-1) === 'ru';
+  const ru = locale === 'ru';
   const filename = 'diagram-' + id.replace(/[^a-zA-Z0-9_-]/g, '-');
   function link(theme: 'light' | 'dark', label: string) {
     return '<a data-diagram-export="' + theme + '" download="' + filename + '-' + theme + '.svg" href="data:image/svg+xml;charset=utf-8,' +

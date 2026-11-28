@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { renderDiagramSvg, renderDiagramFigure, renderDiagramView } from '../../src/lib/docs/diagrams/render.ts';
+import { renderDiagramSvg, renderDiagramFigure, renderDiagramView } from '../../packages/visuals/src/index.ts';
 import { extractDiagrams } from '../export-diagrams.mjs';
 
 const example = {
@@ -28,7 +28,7 @@ test('standalone SVG has fixed theme, dimensions, accessible title and an arrow'
 });
 
 test('embedded figure uses theme variables and exports both standalone SVG variants', () => {
-  const figure = renderDiagramFigure(source, 'main/ru', 'sample');
+  const figure = renderDiagramFigure(source, 'ru', 'sample');
   assert.match(figure, /var\(--book-diagram-owner/);
   assert.match(figure, /SVG \(светлая\)/);
   const links = [...figure.matchAll(/href="data:image\/svg\+xml;charset=utf-8,([^"]+)"/g)];
@@ -98,12 +98,12 @@ test('interactive controls resolve safe numeric expressions and export selected 
   const source = JSON.stringify({controls:[{kind:'slider',id:'count',label:'Count',min:1,max:100,default:10}],
     body:{kind:'bar',title:{$format:'bytes',value:{$op:'mul',args:[{$var:'count'},4]}},value:{$var:'count'},max:100}});
   assert.match(renderDiagramSvg(source,'light',{count:20}),/>80 B<\/text>/);
-  assert.match(renderDiagramFigure(source,'main/en','interactive'),/type="range"/);
+  assert.match(renderDiagramFigure(source,'en','interactive'),/type="range"/);
   assert.throws(()=>renderDiagramSvg(source,'light',{count:101}),/invalid value/);
 });
 
 test('natural alignment inserts internal and trailing padding', async () => {
-  const { computeMemoryLayout } = await import('../../src/lib/docs/diagrams/model.ts');
+  const { computeMemoryLayout } = await import('../../packages/visuals/src/index.ts');
   const fields = [{name:'Kind',size:1,alignment:1},{name:'Value',size:4,alignment:4},{name:'Flags',size:1,alignment:1}];
   const before = computeMemoryLayout(fields);
   const after = computeMemoryLayout([fields[1],fields[0],fields[2]]);
@@ -114,7 +114,7 @@ test('natural alignment inserts internal and trailing padding', async () => {
 });
 
 test('named data expressions can be reused and cycles are rejected', async () => {
-  const { materializeDiagram } = await import('../../src/lib/docs/diagrams/model.ts');
+  const { materializeDiagram } = await import('../../packages/visuals/src/index.ts');
   const source = JSON.stringify({data:{n:4,total:{$op:'mul',args:[{$ref:'n'},2]}},body:{kind:'node',code:{$format:'bytes',value:{$ref:'total'}}}});
   assert.equal(JSON.parse(materializeDiagram(source)).body.code,'8 B');
   assert.throws(()=>materializeDiagram(JSON.stringify({data:{a:{$ref:'b'},b:{$ref:'a'}},body:{$ref:'a'}})),/cyclic/);
@@ -122,7 +122,7 @@ test('named data expressions can be reused and cycles are rejected', async () =>
 
 for (const lang of ['ru','en']) {
   test('visual gallery renders finite states and slider endpoints (' + lang + ')', async () => {
-    const { getVariants, getControls } = await import('../../src/lib/docs/diagrams/model.ts');
+    const { getVariants, getControls } = await import('../../packages/visuals/src/index.ts');
     const filename = new URL('../../src/content/main/' + lang + '/authoring/02-code-and-sources/2-7-interactive-diagrams.md',import.meta.url);
     const blocks = extractDiagrams(await readFile(filename,'utf8'));
     assert.equal(blocks.length,9);
@@ -134,7 +134,7 @@ for (const lang of ['ru','en']) {
           assert.match(renderDiagramSvg(block.source,theme,variant),/<\/svg>$/);
         }
       }
-      assert.match(renderDiagramFigure(block.source,'main/'+lang,'gallery'),/<figure/);
+      assert.match(renderDiagramFigure(block.source,lang,'gallery'),/<figure/);
     }
   });
 }
@@ -143,7 +143,7 @@ test('standalone page contains controls, inline SVG, and an isolated runtime', a
   const { composeStandaloneHtml } = await import('../export-diagram-html.mjs');
   const diagram = JSON.stringify({controls:[{kind:'tabs',id:'x',label:'State',options:[{label:'A',value:'a'},{label:'B',value:'b'}],default:'a'}],
     body:{kind:'node',title:{$var:'x'}}});
-  const page = composeStandaloneHtml([renderDiagramFigure(diagram,'standalone/en','1')],'.book-diagram{}','/* </script> */','en');
+  const page = composeStandaloneHtml([renderDiagramFigure(diagram,'en','1')],'.book-diagram{}','/* </script> */','en');
   assert.match(page,/<!doctype html>/);
   assert.match(page,/data-diagram-source=/);
   assert.match(page,/type="radio"/);
@@ -162,7 +162,7 @@ test('monospace text preserves indentation and table column alignment', () => {
 });
 
 test('diagram technical actions are in a top disclosure with portable downloads', () => {
-  for (const context of ['main/ru', 'main/en']) {
+  for (const context of ['ru', 'en']) {
     const figure = renderDiagramFigure(source, context, 'toolbar');
     assert.match(figure, /<details class="book-diagram-menu">/);
     assert.match(figure, /<summary aria-label="[^"]+"/);
@@ -184,7 +184,7 @@ test('embedded title is in the toolbar while portable SVG keeps its visible head
     ],default:'true'}],
     body:{kind:'node',title:'Resource'}
   });
-  const figure = renderDiagramFigure(input,'main/en','title');
+  const figure = renderDiagramFigure(input,'en','title');
   assert.match(figure,/data-diagram-title[^>]*>Entity&lt;Player, true&gt;<\/div>/);
   assert.ok(figure.indexOf('data-diagram-title') < figure.indexOf('book-diagram-controls'));
   const view = renderDiagramView(input,{history:'false'});
@@ -192,12 +192,12 @@ test('embedded title is in the toolbar while portable SVG keeps its visible head
   assert.match(view.svg,/<title>Entity&lt;Player, false&gt;<\/title>/);
   assert.doesNotMatch(view.svg,/<text[^>]*>Entity&lt;Player, false&gt;<\/text>/);
   assert.match(renderDiagramSvg(input,'light',{history:'false'}),/<text[^>]*>Entity&lt;Player, false&gt;<\/text>/);
-  assert.match(renderDiagramFigure(JSON.stringify({body:{kind:'node',title:'A'}}),'main/ru','untitled'),/data-diagram-title[^>]*>Схема<\/div>/);
+  assert.match(renderDiagramFigure(JSON.stringify({body:{kind:'node',title:'A'}}),'ru','untitled'),/data-diagram-title[^>]*>Схема<\/div>/);
 });
 
 test('every diagram has a source view with escaped original Markdown', () => {
   const input = JSON.stringify({title:'<Demo>',body:{kind:'node',code:'a < b && c > d'}},null,2);
-  const figure = renderDiagramFigure(input,'main/en','source');
+  const figure = renderDiagramFigure(input,'en','source');
   assert.match(figure, /data-diagram-view="preview" aria-pressed="true"/);
   assert.match(figure, /data-diagram-view="source" aria-pressed="false"/);
   assert.match(figure, /data-diagram-panel="source" hidden/);

@@ -4,7 +4,7 @@ import sourceLinksData from '$lib/generated/source-links.json';
 import anchorsData from '$lib/generated/anchors.json';
 import siteConfigData from '$lib/generated/site-config.json';
 import { escapeHtml, highlightCode } from './highlighter.server';
-import { renderDiagramFigure } from './diagrams/render';
+import { renderDiagramFigure } from '../../../packages/visuals/src/index.ts';
 
 const sourceLinks = sourceLinksData as unknown as Record<string, Record<string, string>>;
 const anchors = anchorsData as unknown as Record<string, Record<string, Record<string, string>>>;
@@ -1146,7 +1146,7 @@ export async function renderMarkdown(markdown: string, currentSlug: string, sour
   for (const block of extracted.blocks) {
     if (block.kind === 'diagram') {
       try {
-        rendered.set(block.id, { html: renderDiagramFigure(block.code, contextKey, block.id), language: 'diagram' });
+        rendered.set(block.id, { html: renderDiagramFigure(block.code, contextKey.split('/').at(-1) === 'ru' ? 'ru' : 'en', block.id), language: 'diagram' });
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         throw new Error(`${sourcePath}:${block.sourceLine + 1}: ${message}`);

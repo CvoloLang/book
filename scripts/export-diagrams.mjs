@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { renderDiagramSvg } from '../src/lib/docs/diagrams/render.ts';
-import { getVariants } from '../src/lib/docs/diagrams/model.ts';
+import { renderDiagramSvg } from '../packages/visuals/src/index.ts';
+import { getVariants } from '../packages/visuals/src/index.ts';
 
 // Only top-level fenced diagram blocks are exported. Other fenced examples,
 // including four-backtick Markdown examples that contain diagram fences, are
