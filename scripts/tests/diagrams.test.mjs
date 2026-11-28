@@ -107,3 +107,10 @@ test('natural alignment inserts internal and trailing padding', async () => {
   assert.deepEqual(before.segments.map(s=>s.bytes),[1,3,4,1,3]);
   assert.throws(()=>computeMemoryLayout([{name:'Bad',size:4,alignment:3}]),/alignment/);
 });
+
+test('named data expressions can be reused and cycles are rejected', async () => {
+  const { materializeDiagram } = await import('../../src/lib/docs/diagrams/model.ts');
+  const source = JSON.stringify({data:{n:4,total:{$op:'mul',args:[{$ref:'n'},2]}},body:{kind:'node',code:{$format:'bytes',value:{$ref:'total'}}}});
+  assert.equal(JSON.parse(materializeDiagram(source)).body.code,'8 B');
+  assert.throws(()=>materializeDiagram(JSON.stringify({data:{a:{$ref:'b'},b:{$ref:'a'}},body:{$ref:'a'}})),/cyclic/);
+});

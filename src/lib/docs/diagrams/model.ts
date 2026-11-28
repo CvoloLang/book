@@ -160,9 +160,12 @@ function formatted(value: unknown, format: unknown): string {
   }
 }
 
-function expand(value: unknown, state: State, depth: number, budget: { remaining: number }): unknown {
+type Context = { state: State; data: JsonObject; cache: Map<string, unknown>; active: Set<string> };
+
+function expand(value: unknown, context: Context, depth: number, budget: { remaining: number }): unknown {
+  const { state, data, cache, active } = context;
   if (--budget.remaining < 0 || depth > 40) fail('template is too complex');
-  const next = (child: unknown) => expand(child,state,depth+1,budget);
+  const next = (child: unknown) => expand(child,context,depth+1,budget);
   if (Array.isArray(value)) return value.map(next);
   if (!value || typeof value !== 'object') return value;
   const item = object(value,'template');
@@ -175,6 +178,18 @@ function expand(value: unknown, state: State, depth: number, budget: { remaining
         const id = validId(item.$var);
         if (!Object.hasOwn(state,id)) fail('unknown variable ' + id);
         return state[id];
+      }
+      case '$ref': {
+        allowed(item,['$ref'],'data reference');
+        const id = validId(item.$ref);
+        if (!Object.hasOwn(data,id)) fail('unknown data reference ' + id);
+        if (cache.has(id)) return cache.get(id);
+        if (active.has(id)) fail('cyclic data reference ' + id);
+        active.add(id);
+        const result = next(data[id]);
+        active.delete(id);
+        cache.set(id,result);
+        return result;
       }
       case '$switch': {
         allowed(item,['$switch','cases'],'switch');
@@ -250,7 +265,11 @@ function expand(value: unknown, state: State, depth: number, budget: { remaining
 /** Resolve one state into a plain, validated-by-renderer diagram JSON. */
 export function materializeDiagram(source: string, overrides: State = {}): string {
   const input = root(source);
-  const {controls, ...diagram} = input;
+  const {controls, data: rawData, ...diagram} = input;
   const state = getState(controlsFrom(controls),overrides);
-  return JSON.stringify(expand(diagram,state,0,{remaining:16000}));
+  const data = rawData === undefined ? {} : object(rawData,'data');
+  if (Object.keys(data).length > 64) fail('at most 64 named data entries');
+  for (const key of Object.keys(data)) validId(key);
+  const context: Context = {state,data,cache:new Map(),active:new Set()};
+  return JSON.stringify(expand(diagram,context,0,{remaining:16000}));
 }
