@@ -198,9 +198,9 @@ test('embedded title is in the toolbar while portable SVG keeps its visible head
 test('every diagram has a source view with escaped original Markdown', () => {
   const input = JSON.stringify({title:'<Demo>',body:{kind:'node',code:'a < b && c > d'}},null,2);
   const figure = renderDiagramFigure(input,'en','source');
-  assert.match(figure, /data-diagram-view="preview" aria-pressed="true"/);
-  assert.match(figure, /data-diagram-view="source" aria-pressed="false"/);
-  assert.match(figure, /data-diagram-panel="source" hidden/);
+  assert.match(figure, /data-diagram-open-source/);
+  assert.match(figure, /<dialog class="book-diagram-source-dialog"/);
+  assert.doesNotMatch(figure, /data-diagram-view=|data-diagram-panel=/);
   assert.match(figure, /data-diagram-copy/);
   assert.match(figure, /data-diagram-markdown>\x60\x60\x60diagram\n/);
   assert.match(figure, /a &lt; b &amp;&amp; c &gt; d/);

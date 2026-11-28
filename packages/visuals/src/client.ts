@@ -2,7 +2,7 @@ import { getControls, getState, type State } from './model.ts';
 import { renderDiagramSvg, renderDiagramView } from './render.ts';
 
 /** One delegated listener per article; native form controls retain focus. */
-export function enhanceDiagrams(article: HTMLElement) {
+export function enhanceDiagrams(article: HTMLElement, options: { openSource?: (markdown: string, title: string) => void } = {}) {
   const states = new WeakMap<HTMLElement, State>();
   let frame = 0;
   let pending = new Set<HTMLElement>();
@@ -81,24 +81,19 @@ export function enhanceDiagrams(article: HTMLElement) {
     menu.open = false;
     if (restoreFocus) menu.querySelector('summary')?.focus();
   }
-  function setView(figure: HTMLElement, view: string) {
-    if (view !== 'preview' && view !== 'source') return;
-    for (const button of figure.querySelectorAll<HTMLButtonElement>('[data-diagram-view]')) {
-      button.setAttribute('aria-pressed', String(button.dataset.diagramView === view));
+  function openSource(figure: HTMLElement) {
+    const code = figure.querySelector<HTMLElement>('[data-diagram-markdown]');
+    if (!code) return;
+    if (options.openSource) {
+      options.openSource(code.textContent ?? '', figure.querySelector('[data-diagram-title]')?.textContent ?? '');
+      return;
     }
-    for (const panel of figure.querySelectorAll<HTMLElement>('[data-diagram-panel]')) {
-      panel.hidden = panel.dataset.diagramPanel !== view;
-    }
-  }
-  function onViewClick(event: MouseEvent) {
-    if (!(event.target instanceof Element)) return;
-    const button = event.target.closest<HTMLButtonElement>('[data-diagram-view]');
-    const figure = button?.closest<HTMLElement>('.book-diagram');
-    if (figure && button?.dataset.diagramView) setView(figure, button.dataset.diagramView);
+    const dialog = figure.querySelector<HTMLDialogElement>('.book-diagram-source-dialog');
+    if (dialog && !dialog.open) dialog.showModal();
   }
   async function copySource(figure: HTMLElement, button: HTMLButtonElement) {
     const code = figure.querySelector<HTMLElement>('[data-diagram-markdown]');
-    const status = figure.querySelector<HTMLElement>('[data-diagram-copy-status]');
+    const status = (button.closest('dialog') ?? figure).querySelector<HTMLElement>(button.closest('dialog') ? '[data-diagram-copy-status]' : '.book-diagram-copy-status');
     if (!code || !status) return;
     try {
       const clipboard = owner.defaultView?.navigator.clipboard;
@@ -106,7 +101,8 @@ export function enhanceDiagrams(article: HTMLElement) {
       await clipboard.writeText(code.textContent ?? '');
       status.textContent = button.dataset.copySuccess ?? 'Source copied';
     } catch {
-      setView(figure, 'source');
+      openSource(figure);
+      if (options.openSource) return;
       const range = owner.createRange();
       range.selectNodeContents(code);
       const selection = owner.getSelection();
@@ -122,7 +118,23 @@ export function enhanceDiagrams(article: HTMLElement) {
     for (const open of article.querySelectorAll<HTMLDetailsElement>('.book-diagram-menu[open]')) {
       if (open !== menu) closeMenu(open);
     }
+    const dialog = target.closest<HTMLDialogElement>('.book-diagram-source-dialog');
+    if (dialog && article.contains(dialog)) {
+      if (target === dialog || target.closest('[data-diagram-close-source]')) dialog.close();
+      else {
+        const button = target.closest<HTMLButtonElement>('[data-diagram-copy]');
+        const figure = dialog.closest<HTMLElement>('.book-diagram');
+        if (button && figure) void copySource(figure, button);
+      }
+      return;
+    }
     if (!menu || !article.contains(menu)) return;
+    if (target.closest('[data-diagram-open-source]')) {
+      const figure = menu.closest<HTMLElement>('.book-diagram');
+      closeMenu(menu, true);
+      if (figure) openSource(figure);
+      return;
+    }
     const copyButton = target.closest<HTMLButtonElement>('[data-diagram-copy]');
     if (copyButton) {
       const figure = menu.closest<HTMLElement>('.book-diagram');
@@ -156,13 +168,11 @@ export function enhanceDiagrams(article: HTMLElement) {
   }
   owner.addEventListener('click', onMenuClick);
   owner.addEventListener('keydown', onMenuKeydown);
-  article.addEventListener('click',onViewClick);
   article.addEventListener('click',beforeDownload);
   article.addEventListener('input',onInput);
   return () => {
     owner.removeEventListener('click', onMenuClick);
     owner.removeEventListener('keydown', onMenuKeydown);
-    article.removeEventListener('click',onViewClick);
     article.removeEventListener('click',beforeDownload);
     article.removeEventListener('input',onInput);
     if (frame) cancelAnimationFrame(frame);

@@ -13,6 +13,7 @@
   let mobileNav = $state(false);
   let copyReset: number | undefined;
   let sourceOpen = $state(false);
+  let diagramSource = $state(false);
   let sourceLoading = $state(false);
   let sourcePath = $state('');
   let sourceCode = $state('');
@@ -157,6 +158,7 @@
 
   function closeSource() {
     sourceOpen = false;
+    ++sourceRequest;
   }
 
   function onWindowKeydown(event: KeyboardEvent) {
@@ -169,6 +171,8 @@
     const path = button.dataset.sourcePath ?? '';
     if (!rawUrl) return;
 
+    diagramSource = false;
+    const request = ++sourceRequest;
     sourcePath = path;
     sourceGithubUrl = githubUrl;
     sourceError = '';
@@ -182,7 +186,6 @@
       return;
     }
 
-    const request = ++sourceRequest;
     sourceCode = '';
     sourceHtml = '';
     sourceLoading = true;
@@ -200,6 +203,29 @@
     } catch (error) {
       if (request !== sourceRequest) return;
       sourceError = error instanceof Error ? error.message : 'Could not load the source file.';
+    } finally {
+      if (request === sourceRequest) sourceLoading = false;
+    }
+  }
+
+  async function openDiagramSource(markdown: string, title: string) {
+    const request = ++sourceRequest;
+    diagramSource = true;
+    sourcePath = title || 'diagram';
+    sourceGithubUrl = '';
+    sourceError = '';
+    sourceCode = markdown;
+    sourceHtml = '';
+    sourceLoading = true;
+    sourceOpen = true;
+    try {
+      const { highlightSource } = await import('$lib/docs/highlighter.client');
+      // Highlight the JSON body while keeping the original Markdown fence for copying.
+      const json = markdown.slice(markdown.indexOf('\n') + 1, markdown.lastIndexOf('\n'));
+      const html = await highlightSource(json, 'diagram.json');
+      if (request === sourceRequest) sourceHtml = html;
+    } catch {
+      if (request === sourceRequest) sourceHtml = '';
     } finally {
       if (request === sourceRequest) sourceLoading = false;
     }
@@ -258,7 +284,7 @@
     };
 
     node.addEventListener('click', articleClick);
-    const destroyDiagrams = enhanceDiagrams(node);
+    const destroyDiagrams = enhanceDiagrams(node, { openSource: (markdown, title) => { void openDiagramSource(markdown, title); } });
     scheduleDecoration();
     return {
       update() { scheduleDecoration(); },
@@ -417,10 +443,10 @@
 
 {#if sourceOpen}
   <div class="source-modal-backdrop" role="presentation" onclick={(event) => event.currentTarget === event.target && closeSource()}>
-    <div class="source-modal" role="dialog" aria-modal="true" aria-label={`Source: ${sourcePath}`}>
+    <div class="source-modal" class:diagram-source-modal={diagramSource} role="dialog" aria-modal="true" aria-label={`Source: ${sourcePath}`}>
       <header class="source-modal-header">
         <div class="min-w-0">
-          <div class="source-modal-eyebrow"><Github class="size-3.5" /> <span>{t(lang, 'source.githubSource')}</span></div>
+          <div class="source-modal-eyebrow">{#if diagramSource}<span>{lang === 'ru' ? 'Исходник схемы · Markdown' : 'Diagram source · Markdown'}</span>{:else}<Github class="size-3.5" /> <span>{t(lang, 'source.githubSource')}</span>{/if}</div>
           <div class="source-modal-path" title={sourcePath}>{sourcePath}</div>
         </div>
         <div class="source-modal-actions">
@@ -442,7 +468,9 @@
             {#if sourceGithubUrl}<a href={sourceGithubUrl} target="_blank" rel="noreferrer">{t(lang, 'source.openOnGithub')}</a>{/if}
           </div>
         {:else}
-          <div class="source-modal-highlight">{@html sourceHtml}</div>
+          {#if diagramSource && sourceHtml}<div class="diagram-source-fence">```diagram</div>{/if}
+          <div class="source-modal-highlight">{#if sourceHtml}{@html sourceHtml}{:else}<pre class="shiki plain-code"><code>{sourceCode}</code></pre>{/if}</div>
+          {#if diagramSource && sourceHtml}<div class="diagram-source-fence">```</div>{/if}
         {/if}
       </div>
     </div>

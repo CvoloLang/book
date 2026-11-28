@@ -772,3 +772,15 @@ html.dark .code-tab-panel .code-fragment-mark {
   background: rgb(250 204 21 / .2);
   box-shadow: 0 0 0 1px rgb(250 204 21 / .18);
 }
+
+/* Diagram definitions can be much larger than individual source files. */
+.source-modal.diagram-source-modal {
+  width: 100%;
+  height: calc(100dvh - 2 * clamp(.75rem, 3vw, 2rem));
+}
+.diagram-source-modal .source-modal-highlight .shiki { padding-block: 0; }
+.diagram-source-fence { padding: .65rem 1.25rem; font: .84rem/1.6 "SFMono-Regular", Consolas, monospace; color: #71717a; white-space: pre; }
+.dark .diagram-source-fence { color: #a1a1aa; }
+@media (max-width: 640px) {
+  .source-modal.diagram-source-modal { height: calc(100dvh - 1rem); }
+}
