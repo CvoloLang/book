@@ -1,4 +1,4 @@
-# Declarative diagrams
+# 2.6 Declarative diagrams
 
 A `diagram` fence renders a JSON description as a vector illustration. It supports nested containers, memory cells, variable states and connections. Rendering takes place on the server; no browser graphics engine is required. The embedded figure follows the Book Cvolo theme.
 

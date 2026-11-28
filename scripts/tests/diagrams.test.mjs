@@ -114,3 +114,22 @@ test('named data expressions can be reused and cycles are rejected', async () =>
   assert.equal(JSON.parse(materializeDiagram(source)).body.code,'8 B');
   assert.throws(()=>materializeDiagram(JSON.stringify({data:{a:{$ref:'b'},b:{$ref:'a'}},body:{$ref:'a'}})),/cyclic/);
 });
+
+for (const lang of ['ru','en']) {
+  test('visual gallery renders finite states and slider endpoints (' + lang + ')', async () => {
+    const { getVariants, getControls } = await import('../../src/lib/docs/diagrams/model.ts');
+    const filename = new URL('../../src/content/main/' + lang + '/authoring/02-code-and-sources/2-7-interactive-diagrams.md',import.meta.url);
+    const blocks = extractDiagrams(await readFile(filename,'utf8'));
+    assert.equal(blocks.length,9);
+    for (const block of blocks) {
+      for (const state of getVariants(block.source)) {
+        const states = [state, ...getControls(block.source).filter(c=>c.kind==='slider').flatMap(c=>[
+          {...state,[c.id]:c.min},{...state,[c.id]:c.max}])];
+        for (const variant of states) for (const theme of ['light','dark']) {
+          assert.match(renderDiagramSvg(block.source,theme,variant),/<\/svg>$/);
+        }
+      }
+      assert.match(renderDiagramFigure(block.source,'main/'+lang,'gallery'),/<figure/);
+    }
+  });
+}
