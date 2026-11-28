@@ -289,3 +289,16 @@ test('elbow routing reserves space for the arrowhead before the target', () => {
   assert.equal(points.at(-1)[0],points.at(-2)[0]);
   assert.ok(points.at(-1)[1] - points.at(-2)[1] >= 8);
 });
+
+for (const lang of ['ru','en']) {
+  test('step-by-step authoring example renders all states (' + lang + ')', async () => {
+    const { getVariants } = await import('../../packages/visuals/src/index.ts');
+    const url = new URL('../../src/content/main/' + lang + '/authoring/02-code-and-sources/2-8-step-diagrams.md',import.meta.url);
+    const [block] = extractDiagrams(await readFile(url,'utf8'));
+    assert.equal(getVariants(block.source).length,3);
+    for (const state of getVariants(block.source)) {
+      for (const theme of ['light','dark']) assert.match(renderDiagramSvg(block.source,theme,state),/<\/svg>$/);
+    }
+    assert.match(renderDiagramFigure(block.source,lang,'steps'),/data-diagram-step-count/);
+  });
+}
