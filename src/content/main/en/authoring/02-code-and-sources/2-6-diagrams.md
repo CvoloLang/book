@@ -2,7 +2,7 @@
 
 A `diagram` fence renders a JSON description as a vector illustration. It supports nested containers, memory cells, variable states and connections. Rendering takes place on the server; no browser graphics engine is required. The embedded figure follows the Book Cvolo theme.
 
-Download a standalone SVG in either light or dark colors below each diagram. Reference the saved file in ordinary Markdown: `![Description](diagram-light.svg)`.
+Download a standalone SVG in either light or dark colors from the “⋯” menu at the top right of each diagram. Reference the saved file in ordinary Markdown: `![Description](diagram-light.svg)`.
 
 ## Examples
 
@@ -304,3 +304,5 @@ The root accepts a minimum `width` and `style` (background, border, opacity and 
 Use #RGB, #RGBA, #RRGGBB or #RRGGBBAA. HEX alpha multiplies explicit opacity; set `fillOpacity: 1` for an opaque fill. Edges support `label` and `arrow: false` for connectors without arrowheads. Properties apply to relevant primitives, not arbitrary CSS.
 
 See [interactive visualizations](2-7-interactive-diagrams.md).
+
+Diagrams fit the available width by default. Use “Original size” in the top-right menu to inspect fine details (narrow screens may then scroll horizontally), or “Fit to width” to restore the default.

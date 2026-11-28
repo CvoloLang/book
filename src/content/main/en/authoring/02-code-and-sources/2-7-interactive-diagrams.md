@@ -2107,7 +2107,7 @@ Each layout field has `name`, `size`, `alignment`, optional `tone` and `style`. 
 
 ## Export
 
-SVG downloads follow the selected parameters. Command-line usage:
+SVG downloads in the top-right “⋯” menu follow the selected parameters. Command-line usage:
 
 ```bash
 npm run diagrams:export -- article.md ./images both all
@@ -2120,3 +2120,5 @@ npm run diagrams:html -- article.md ./visuals.html en
 ## Limits
 
 Text measurement is approximate; long labels may require extra width. Crossings between individual edges and labels are not fully optimized. Tables and grids share the general layout engine. Sliders do not execute code. A future field editor can reuse `computeMemoryLayout` in `model.ts`; editing fields is not part of the current format.
+
+Diagrams fit the available width by default. Use “Original size” in the top-right menu to inspect fine details (narrow screens may then scroll horizontally), or “Fit to width” to restore the default.
