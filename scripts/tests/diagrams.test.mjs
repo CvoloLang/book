@@ -71,3 +71,9 @@ for (const lang of ['ru', 'en']) {
     }
   });
 }
+
+ test('short labels are not split across lines', () => {
+  const svg = renderDiagramSvg(JSON.stringify({title:'Жизненный цикл экземпляра',body:{kind:'column',children:[{kind:'node',title:'Конструктор'},{kind:'node',title:'Экземпляр'},{kind:'node',title:'Деструктор'}]}}));
+  assert.match(svg, />Деструктор<\/text>/);
+  assert.match(svg, />Жизненный цикл экземпляра<\/text>/);
+});

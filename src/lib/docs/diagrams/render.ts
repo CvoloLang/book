@@ -167,17 +167,7 @@ function wrap(value: string, maxWidth: number, size: number, mono: boolean): str
         lines.push(line);
         line = '';
       }
-      if (textWidth(word, size, mono) > maxWidth) {
-        for (const char of word) {
-          if (line && textWidth(line + char, size, mono) > maxWidth) {
-            lines.push(line);
-            line = '';
-          }
-          line += char;
-        }
-      } else {
-        line = line ? line + ' ' + word : word;
-      }
+      line = line ? line + ' ' + word : word;
     }
     lines.push(line);
   }
@@ -206,12 +196,17 @@ function shift(layout: Layout, x: number, y: number) {
   for (const child of layout.children) shift(child, x, y);
 }
 
-function measure(element: Element): Layout {
+function measure(element: Element, minimumWidth = 0): Layout {
   const { kind } = element;
   const framed = kind === 'group' || kind === 'node';
   const padding = kind === 'group' ? 18 : kind === 'node' ? 14 : 0;
   const horizontal = kind === 'row' || kind === 'cells';
-  const children = element.children.map((child) => measure(child));
+  let children = element.children.map((child) => measure(child));
+  // A simple vertical flow of nodes should have one consistent width.
+  if (kind === 'column' && children.length > 1 && children.every((child) => child.element.kind === 'node')) {
+    const width = Math.max(...children.map((child) => child.bounds.w));
+    children = element.children.map((child) => measure(child, width));
+  }
   const gap = element.gap;
   if (kind === 'space') return { element, bounds: { x: 0, y: 0, w: element.width ?? 8, h: element.height ?? 24 }, children, lines: [] };
 
@@ -227,8 +222,10 @@ function measure(element: Element): Layout {
     textWidth(element.code ?? '', 16, true),
     textWidth(element.text ?? '', 14, false)
   );
-  const w = Math.ceil(Math.max(element.width ?? 0, framed ? 94 : 0,
-    childWidth + 2 * padding, Math.min(naturalText, 310) + 2 * padding));
+  const longestWord = Math.max(0, ...[ [element.title, 16, false], [element.code, 16, true], [element.text, 14, false] ].flatMap(([value, size, mono]) =>
+    String(value ?? '').split(/\s+/).map((word) => textWidth(word, Number(size), Boolean(mono)))));
+  const w = Math.ceil(Math.max(minimumWidth, element.width ?? 0, framed ? 94 : 0,
+    childWidth + 2 * padding, Math.min(naturalText, 310) + 2 * padding + 2, longestWord + 2 * padding + 2));
   const lines = textLines(element, Math.max(20, w - 2 * padding));
   const header = linesHeight(lines);
   const separation = header && children.length ? 12 : 0;
@@ -423,7 +420,10 @@ function paintEdge(points: Point[], tone: Tone, theme: Theme) {
 function build(source: string) {
   const diagram = parse(source);
   const layout = measure(diagram.body);
-  const width = Math.max(320, layout.bounds.w + 48);
+  const width = Math.max(320, layout.bounds.w + 48,
+    Math.min(800, textWidth(diagram.title, 18, false) + 52),
+    ...diagram.title.split(/\s+/).map((word) => Math.ceil(textWidth(word, 18, false)) + 52),
+    ...diagram.caption.split(/\s+/).map((word) => Math.ceil(textWidth(word, 13, false)) + 52));
   const titleLines = wrap(diagram.title, width - 48, 18, false);
   const captionLines = wrap(diagram.caption, width - 48, 13, false);
   const headerHeight = diagram.title ? titleLines.length * 24 + 12 : 0;
@@ -465,7 +465,7 @@ export function renderDiagramFigure(source: string, contextKey: string, id: stri
     return '<a download="' + filename + '-' + theme + '.svg" href="data:image/svg+xml;charset=utf-8,' +
       encodeURIComponent(diagram.svg(theme)) + '">' + label + '</a>';
   }
-  return '<figure class="book-diagram"><div class="book-diagram-scroll" tabindex="0" aria-label="' +
+  return '<figure class="book-diagram" style="--book-diagram-width:' + diagram.width + 'px"><div class="book-diagram-scroll" tabindex="0" aria-label="' +
     (ru ? 'Схема' : 'Diagram') + '">' + diagram.svg('book') + '</div><div class="book-diagram-actions">' +
     link('light', ru ? 'SVG (светлая)' : 'SVG (light)') + link('dark', ru ? 'SVG (тёмная)' : 'SVG (dark)') +
     '</div></figure>';

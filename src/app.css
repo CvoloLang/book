@@ -824,3 +824,7 @@ html.dark .code-tab-panel .code-fragment-mark {
   margin-top: .35rem;
   font-size: .75rem;
 }
+
+.book-diagram { width: min(100%, var(--book-diagram-width, 100%)); margin-inline: auto; }
+.book-diagram-actions a { padding: .25rem .55rem; border: 1px solid var(--book-diagram-frame); border-radius: .375rem; text-decoration: none; }
+.book-diagram-actions a:hover { border-color: var(--book-diagram-owner); }
