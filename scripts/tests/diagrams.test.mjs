@@ -81,7 +81,12 @@ for (const lang of ['ru', 'en']) {
 test('hex colors, opacity and edge styles are validated and exported', () => {
  const svg = renderDiagramSvg(JSON.stringify({body:{kind:'node',title:'Custom',style:{fill:'#12345680',stroke:'#abc',fillOpacity:0.4,radius:12}}}));
  assert.match(svg,/fill="#12345680" fill-opacity="0.4"/);
- assert.throws(()=>renderDiagramSvg(JSON.stringify({body:{kind:'node',style:{fill:'url(javascript:alert(1))'}}})),/hex color/);
+ for (const fill of ['url(javascript:alert(1))', '#12345', '#xyz', '#123456789', '#abc\n', null, 123]) {
+   assert.throws(() => renderDiagramSvg(JSON.stringify({body:{kind:'node',style:{fill}}})), /style\.fill: expected a hex color/);
+ }
+ for (const fill of ['#abc', '#abcd', '#123456', '#12345680']) {
+   assert.ok(renderDiagramSvg(JSON.stringify({body:{kind:'node',style:{fill}}})).includes('fill="' + fill + '"'));
+ }
 });
 
 test('memory strip preserves byte proportions and padding', () => {

@@ -104,10 +104,12 @@ function identifier(value: unknown, name: string): string | undefined {
   return id;
 }
 
-function hex(value: unknown, name: string) {
-  const result = string(value, name, 9);
-  if (result !== undefined && !/^#(?:[0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(result)) fail(name + ': expected a hex color');
-  return result;
+function hex(value: unknown, name: string): string | undefined {
+  if (value === undefined) return undefined;
+  if (typeof value !== 'string' || !/^#(?:[0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})(?![\s\S])/i.test(value)) {
+    fail(name + ': expected a hex color');
+  }
+  return value;
 }
 
 function parseStyle(value: unknown): Style {
