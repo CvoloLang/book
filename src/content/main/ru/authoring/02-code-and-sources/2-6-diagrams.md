@@ -77,7 +77,7 @@
     ]
   },
   "edges": [
-    { "from": "address", "to": "value", "fromSide": "bottom", "toSide": "right" }
+    { "from": "address", "to": "value", "fromSide": "bottom", "toSide": "top" }
   ]
 }
 ```

@@ -314,12 +314,25 @@ function crosses(a: Point, b: Point, rect: Rect) {
 }
 
 function route(edge: Edge, items: Layout[], canvas: Rect): Point[] {
-  const from = items.find((item) => item.element.id === edge.from)!.bounds;
-  const to = items.find((item) => item.element.id === edge.to)!.bounds;
+  const source = items.find((item) => item.element.id === edge.from)!;
+  const target = items.find((item) => item.element.id === edge.to)!;
+  const from = source.bounds;
+  const to = target.bounds;
   const automatic = automaticSides(from, to);
   const fromSide = edge.fromSide ?? automatic[0];
   const toSide = edge.toSide ?? automatic[1];
-  const start = anchor(from, fromSide), end = anchor(to, toSide);
+  const start = anchor(from, fromSide);
+  const end = anchor(to, toSide);
+  // For composite memory regions, align the port with the incoming pointer
+  // when possible. This avoids an unnecessary bend and does not imply that
+  // the arrow points at any particular member of the composite value.
+  if (target.element.kind === 'cells' || target.element.kind === 'group') {
+    if (toSide === 'top' || toSide === 'bottom') {
+      end.x = Math.max(to.x + 12, Math.min(to.x + to.w - 12, start.x));
+    } else {
+      end.y = Math.max(to.y + 12, Math.min(to.y + to.h - 12, start.y));
+    }
+  }
   const a = outward(start, fromSide), b = outward(end, toSide);
   const blockers = items.filter(({ element, bounds }) =>
     (element.kind === 'group' || element.kind === 'node' || element.kind === 'text') &&
@@ -363,7 +376,8 @@ function color(theme: Theme, name: keyof Palette) {
 function paintText(lines: TextLine[], x: number, y: number, centered: boolean, theme: Theme, tone: Tone = 'neutral') {
   return lines.map((line) => {
     y += line.size;
-    const fill = line.muted ? color(theme, tone === 'error' ? 'error' : 'muted') : color(theme, 'foreground');
+    const fill = line.strike ? color(theme, 'muted') :
+      line.muted ? color(theme, tone === 'error' ? 'error' : 'muted') : color(theme, 'foreground');
     const result = '<text x="' + x + '" y="' + y + '" font-size="' + line.size +
       '" font-weight="' + (line.strong ? '600' : '400') + '" text-anchor="' + (centered ? 'middle' : 'start') +
       '" fill="' + fill + '"' +
