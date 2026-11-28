@@ -18,6 +18,7 @@
   let { open = $bindable(false) }: { open: boolean } = $props();
   let query = $state('');
   let input = $state<HTMLInputElement>();
+  let viewport = $state<{ top: number; left: number; width: number; height: number } | undefined>();
   let items = $state<SearchItem[]>([]);
   let loading = $state(false);
   let loadFailed = $state(false);
@@ -72,6 +73,32 @@
     }
   });
 
+  // Chrome on Android can resize only the visual viewport when the
+  // keyboard opens. Measure that area rather than the layout viewport.
+  $effect(() => {
+    if (!open) return;
+    const visual = window.visualViewport;
+    const previousOverflow = document.documentElement.style.overflow;
+    document.documentElement.style.overflow = 'hidden';
+    const update = () => {
+      viewport = {
+        top: visual?.offsetTop ?? 0, left: visual?.offsetLeft ?? 0,
+        width: visual?.width ?? window.innerWidth, height: visual?.height ?? window.innerHeight
+      };
+    };
+    update();
+    visual?.addEventListener('resize', update);
+    visual?.addEventListener('scroll', update);
+    window.addEventListener('resize', update);
+    return () => {
+      visual?.removeEventListener('resize', update);
+      visual?.removeEventListener('scroll', update);
+      window.removeEventListener('resize', update);
+      document.documentElement.style.overflow = previousOverflow;
+      viewport = undefined;
+    };
+  });
+
   function close() {
     open = false;
   }
@@ -84,15 +111,15 @@
 <svelte:window onkeydown={onKeydown} />
 
 {#if open}
-  <div class="fixed inset-0 z-50 bg-zinc-950/35 p-3 pt-[10vh] backdrop-blur-sm" role="presentation" onclick={(event) => event.currentTarget === event.target && close()}>
-    <div class="mx-auto w-full max-w-2xl overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-2xl dark:border-zinc-800 dark:bg-zinc-950">
-      <div class="flex items-center gap-3 border-b border-zinc-200 px-4 dark:border-zinc-800">
+  <div class="search-overlay fixed z-50 flex justify-center bg-zinc-950/35 backdrop-blur-sm" style={viewport ? `top:${viewport.top}px;left:${viewport.left}px;width:${viewport.width}px;height:${viewport.height}px` : undefined} role="presentation" onclick={(event) => event.currentTarget === event.target && close()}>
+    <div role="dialog" aria-modal="true" aria-label={t(lang, 'common.searchDocs')} class="search-panel flex min-h-0 w-full max-w-2xl flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-2xl dark:border-zinc-800 dark:bg-zinc-950">
+      <div class="flex shrink-0 items-center gap-3 border-b border-zinc-200 px-4 dark:border-zinc-800">
         <svg viewBox="0 0 24 24" class="size-5 shrink-0 text-zinc-400" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-        <input bind:this={input} bind:value={query} placeholder={t(lang, 'search.placeholder')} class="h-14 min-w-0 flex-1 bg-transparent text-base text-zinc-900 outline-none placeholder:text-zinc-400 dark:text-zinc-100" />
-        <button type="button" onclick={close} class="rounded-md border border-zinc-200 px-2 py-1 text-xs text-zinc-500 dark:border-zinc-700">Esc</button>
+        <input bind:this={input} bind:value={query} aria-label={t(lang, 'search.placeholder')} placeholder={t(lang, 'search.placeholder')} class="h-14 min-w-0 flex-1 bg-transparent text-base text-zinc-900 outline-none placeholder:text-zinc-400 dark:text-zinc-100" />
+        <button type="button" onclick={close} aria-label={lang === 'ru' ? 'Закрыть поиск' : 'Close search'} class="shrink-0 rounded-md border border-zinc-200 px-3 py-2 text-xs text-zinc-500 dark:border-zinc-700"><span class="hidden sm:inline">Esc</span><span class="text-lg leading-none sm:hidden">×</span></button>
       </div>
 
-      <div class="max-h-[65vh] overflow-y-auto p-2">
+      <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain p-2">
         {#if loading}
           <div class="px-4 py-10 text-center text-sm text-zinc-500">{t(lang, 'search.loading')}</div>
         {:else if loadFailed}
@@ -114,3 +141,17 @@
     </div>
   </div>
 {/if}
+
+<style>
+  .search-overlay {
+    inset: 0;
+    box-sizing: border-box;
+    align-items: flex-start;
+    padding: min(10dvh, 5rem) 1rem 1rem;
+  }
+  .search-panel { max-height: 100%; height: min(32rem, 100%); }
+  @media (max-width: 767px) {
+    .search-overlay { padding: .5rem; align-items: stretch; }
+    .search-panel { height: 100%; max-height: 100%; }
+  }
+</style>
