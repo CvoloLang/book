@@ -1,5 +1,5 @@
 import { getControls, getState, type State } from './model.ts';
-import { renderDiagramSvg } from './render.ts';
+import { renderDiagramSvg, renderDiagramView } from './render.ts';
 
 /** One delegated listener per article; native form controls retain focus. */
 export function enhanceDiagrams(article: HTMLElement) {
@@ -13,12 +13,14 @@ export function enhanceDiagrams(article: HTMLElement) {
     try {
       const controls = getControls(source);
       const state = states.get(figure) ?? getState(controls);
-      const svg = renderDiagramSvg(source, 'book', state);
+      const view = renderDiagramView(source, state);
       const exports = ['light','dark'].map((theme) => ({
         theme, svg:renderDiagramSvg(source,theme as 'light' | 'dark',state)
       }));
       const scroll = figure.querySelector<HTMLElement>('.book-diagram-scroll');
-      if (scroll) scroll.innerHTML = svg; // renderer emits escaped, validated SVG only
+      if (scroll) scroll.innerHTML = view.svg; // renderer emits escaped, validated SVG only
+      const heading = figure.querySelector<HTMLElement>('[data-diagram-title]');
+      if (heading) heading.textContent = view.title || heading.dataset.fallbackTitle || 'Diagram';
       for (const {theme,svg: portable} of exports) {
         const link = figure.querySelector<HTMLAnchorElement>('[data-diagram-export="' + theme + '"]');
         if (link) {

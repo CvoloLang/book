@@ -544,7 +544,7 @@ function paintEdge(points: Point[], edge: Edge, theme: Theme) {
     ' ' + (base.x + 4 * dy) + ',' + (base.y - 4 * dx) + '" fill="' + stroke + '" fill-opacity="' + opacity + '"/>' : '') + label;
 }
 
-function build(source: string, state: State = {}) {
+function build(source: string, state: State = {}, embedded = false) {
   const diagram = parse(materializeDiagram(source, state));
   const layout = measure(diagram.body);
   const width = Math.ceil(Math.max(diagram.width ?? 320, layout.bounds.w + 48,
@@ -553,7 +553,7 @@ function build(source: string, state: State = {}) {
     ...diagram.caption.split(/\s+/).map((word) => Math.ceil(textWidth(word, 13, false)) + 52)));
   const titleLines = wrap(diagram.title, width - 48, 18, false);
   const captionLines = wrap(diagram.caption, width - 48, 13, false);
-  const headerHeight = diagram.title ? titleLines.length * 24 + 12 : 0;
+  const headerHeight = !embedded && diagram.title ? titleLines.length * 24 + 12 : 0;
   const footerHeight = diagram.caption ? captionLines.length * 19 + 12 : 0;
   const height = layout.bounds.h + 48 + headerHeight + footerHeight;
   if (width > 1800 || height > 2400) fail('diagram exceeds 1800 × 2400 units; split it into smaller figures');
@@ -563,7 +563,7 @@ function build(source: string, state: State = {}) {
 
   function svg(theme: Theme) {
     const title = diagram.title || 'Diagram';
-    const header = diagram.title ? paintText(titleLines.map((value) =>
+    const header = !embedded && diagram.title ? paintText(titleLines.map((value) =>
       ({ value, size: 18, mono: false, strong: true, muted: false, strike: false })), 24, 16, false, theme) : '';
     const footer = diagram.caption ? paintText(captionLines.map((value) =>
       ({ value, size: 13, mono: false, strong: false, muted: true, strike: false })), 24, height - 19 * captionLines.length - 12, false, theme) : '';
@@ -575,12 +575,19 @@ function build(source: string, state: State = {}) {
       header + paint(layout, theme) + edges.map(({ edge, points }) => paintEdge(points, edge, theme)).join('') +
       footer + '</svg>';
   }
-  return { svg, width, height };
+  return { svg, width, height, title: diagram.title };
 }
 
 /** Portable SVG with explicit colors and dimensions; usable as ![](file.svg). */
 export function renderDiagramSvg(source: string, theme: Theme = 'light', state: State = {}): string {
   return build(source,state).svg(theme);
+}
+
+/** The embedded heading lives in HTML so it stays readable at every width.
+ * Portable SVGs retain their own heading and accessible metadata. */
+export function renderDiagramView(source: string, state: State = {}) {
+  const view = build(source, state, true);
+  return { title: view.title, svg: view.svg('book') };
 }
 
 /** Server-rendered controls, default SVG and portable downloads. */
@@ -630,7 +637,8 @@ export function renderDiagramFigure(source: string, contextKey: string, id: stri
   }
   const interactive = controls.length ? ' data-diagram-source="' + escape(source) + '"' : '';
   const actionsLabel = ru ? 'Действия со схемой' : 'Diagram actions';
-  const toolbar = '<div class="book-diagram-toolbar"><details class="book-diagram-menu">' +
+  const fallbackTitle = ru ? 'Схема' : 'Diagram';
+  const toolbar = '<div class="book-diagram-toolbar"><div class="book-diagram-heading" data-diagram-title data-fallback-title="' + fallbackTitle + '">' + escape(diagram.title || fallbackTitle) + '</div><details class="book-diagram-menu">' +
     '<summary aria-label="' + actionsLabel + '" title="' + actionsLabel + '">' + toolbarIcon('more') + '</summary>' +
     '<div class="book-diagram-menu-panel">' +
     link('light', ru ? 'Скачать SVG (светлая)' : 'Download SVG (light)') + link('dark', ru ? 'Скачать SVG (тёмная)' : 'Download SVG (dark)') +
@@ -640,5 +648,5 @@ export function renderDiagramFigure(source: string, contextKey: string, id: stri
   return '<figure class="book-diagram' + (controls.length ? ' book-diagram-interactive' : '') + '" style="--book-diagram-width:' + preferredWidth + 'px"' + interactive + '>' + toolbar +
     (controls.length ? '<div class="book-diagram-controls">' + renderControls(controls,filename) + '</div>' : '') +
     '<div class="book-diagram-scroll" aria-label="' + (ru ? 'Схема' : 'Diagram') + '">' +
-    diagram.svg('book') + '</div><div data-diagram-error role="status" hidden></div></figure>';
+    renderDiagramView(source, state).svg + '</div><div data-diagram-error role="status" hidden></div></figure>';
 }

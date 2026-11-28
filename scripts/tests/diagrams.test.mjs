@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { renderDiagramSvg, renderDiagramFigure } from '../../src/lib/docs/diagrams/render.ts';
+import { renderDiagramSvg, renderDiagramFigure, renderDiagramView } from '../../src/lib/docs/diagrams/render.ts';
 import { extractDiagrams } from '../export-diagrams.mjs';
 
 const example = {
@@ -172,4 +172,23 @@ test('diagram technical actions are in a top disclosure with portable downloads'
     assert.ok(!figure.includes('book-diagram-actions'));
     assert.ok(!figure.includes('tabindex="0"'));
   }
+});
+
+test('embedded title is in the toolbar while portable SVG keeps its visible heading', () => {
+  const input = JSON.stringify({
+    title: {$concat: ['Entity<Player, ', {$var:'history'}, '>']},
+    controls: [{kind:'tabs', id:'history', label:'History', options:[
+      {label:'true',value:'true'},{label:'false',value:'false'}
+    ],default:'true'}],
+    body:{kind:'node',title:'Resource'}
+  });
+  const figure = renderDiagramFigure(input,'main/en','title');
+  assert.match(figure,/data-diagram-title[^>]*>Entity&lt;Player, true&gt;<\/div>/);
+  assert.ok(figure.indexOf('data-diagram-title') < figure.indexOf('book-diagram-controls'));
+  const view = renderDiagramView(input,{history:'false'});
+  assert.equal(view.title,'Entity<Player, false>');
+  assert.match(view.svg,/<title>Entity&lt;Player, false&gt;<\/title>/);
+  assert.doesNotMatch(view.svg,/<text[^>]*>Entity&lt;Player, false&gt;<\/text>/);
+  assert.match(renderDiagramSvg(input,'light',{history:'false'}),/<text[^>]*>Entity&lt;Player, false&gt;<\/text>/);
+  assert.match(renderDiagramFigure(JSON.stringify({body:{kind:'node',title:'A'}}),'main/ru','untitled'),/data-diagram-title[^>]*>Схема<\/div>/);
 });

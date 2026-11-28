@@ -63,7 +63,7 @@
 .book-diagram-control select { border: 1px solid var(--book-diagram-frame); border-radius: .4rem; padding: .45rem; color: var(--book-diagram-foreground); background: var(--book-diagram-background); }
 .book-diagram [data-diagram-error] { color: var(--book-diagram-error); font-size: .85rem; margin-top: .5rem; }
 
-.book-diagram-interactive {
+.book-diagram {
   padding: .65rem; border: 1px solid var(--book-diagram-frame);
   border-radius: .9rem; background: var(--book-diagram-background);
 }
@@ -71,7 +71,7 @@
   border: 0; border-bottom: 1px solid var(--book-diagram-frame);
   border-radius: 0; background: transparent; padding: .3rem .35rem .9rem;
 }
-.book-diagram-interactive .book-diagram-scroll > svg > rect:first-of-type {
+.book-diagram .book-diagram-scroll > svg > rect:first-of-type {
   stroke: none;
 }
 .book-diagram-options label:hover input:not(:checked) + span {
@@ -87,11 +87,23 @@
 /* Technical actions are separated from the visualization controls. */
 .book-diagram-toolbar {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
   min-width: 0;
-  margin-bottom: .25rem;
+  padding: .15rem .35rem;
+  margin-bottom: .65rem;
 }
-.book-diagram-menu { position: relative; }
+.book-diagram-heading {
+  flex: 1;
+  min-width: 0;
+  color: var(--book-diagram-foreground);
+  font-size: 1rem;
+  font-weight: 650;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.book-diagram-menu { position: relative; flex: none; }
 .book-diagram-menu[open] { z-index: 5; }
 .book-diagram-menu > summary {
   display: flex;
