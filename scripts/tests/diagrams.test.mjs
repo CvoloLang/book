@@ -332,3 +332,17 @@ test('field editors support the full declared field limit with long names', () =
     body:{kind:'column',children:[{kind:'memory-layout',segments:{$layout:{$fields:'fields'},pick:'segments'}},{kind:'node',code:{$fieldCode:'fields'}}]}});
   assert.match(renderDiagramSvg(source,'dark'),/LongFieldNameForTest11;/);
 });
+
+for (const lang of ['ru','en']) {
+  test('field editor authoring example renders default and reordered states ('+lang+')', async () => {
+    const {getControls,orderFields} = await import('../../packages/visuals/src/index.ts');
+    const url=new URL('../../src/content/main/'+lang+'/authoring/02-code-and-sources/2-9-interactive-editors.md',import.meta.url);
+    const [block]=extractDiagrams(await readFile(url,'utf8'));
+    const [control]=getControls(block.source);
+    for (const theme of ['light','dark']) {
+      assert.match(renderDiagramSvg(block.source,theme),/<\/svg>$/);
+      assert.match(renderDiagramSvg(block.source,theme,{fields:orderFields(control,control.default)}),/<\/svg>$/);
+    }
+    assert.match(renderDiagramFigure(block.source,lang,'editor'),/data-field-action="add"/);
+  });
+}
