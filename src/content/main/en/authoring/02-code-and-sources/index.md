@@ -11,4 +11,5 @@ Use these features when they make an explanation easier to scan or verify. Keep 
 - code tabs;
 - file trees;
 - source links and Go To Definition;
-- declarative diagrams and SVG export.
+- declarative diagrams and SVG export;
+- interactive visualizations and memory layout.

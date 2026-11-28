@@ -2053,3 +2053,70 @@ Parameters and calculations update diagrams without reloading the page. The sele
   }
 }
 ```
+
+## Interactive format
+
+`controls` declares up to six parameters: `tabs` shows clearly selected options, `select` is a drop-down list, and `slider` declares `min`, `max`, `step`, and `default`. Options have a `label` and a string or numeric `value`. `data` stores named values and calculations. Authors provide data rather than executable JavaScript.
+
+| Expression | Purpose |
+| --- | --- |
+| `{"$var":"count"}` | Parameter value |
+| `{"$ref":"bytes"}` | Named data value |
+| `{"$switch":"type","cases":{...}}` | Select a value by parameter |
+| `{"$op":"mul","args":[a,b]}` | add, sub, mul, div, min, max |
+| `{"$format":"bytes","value":n}` | bytes, kib, mib, mb, percent, number |
+| `{"$concat":[a,b]}` | Join strings |
+| `{"$layout":[...],"pick":"segments"}` | Natural alignment; pick: segments, size, alignment, padding |
+
+Each layout field has `name`, `size`, `alignment`, optional `tone` and `style`. Field order is preserved; internal and trailing padding are calculated automatically. Compare layouts with the same SVG units per byte (`scale`). This model does not run Cvolo or model special ABI, packing, or compiler optimization rules.
+
+### Source example
+
+````markdown
+```diagram
+{
+  "title": "Array memory",
+  "controls": [
+    { "kind": "slider", "id": "count", "label": "Count",
+      "min": 1, "max": 100, "step": 1, "default": 10 }
+  ],
+  "data": {
+    "bytes": { "$op": "mul", "args": [{ "$var": "count" }, 4] }
+  },
+  "body": {
+    "kind": "bar",
+    "title": { "$format": "bytes", "value": { "$ref": "bytes" } },
+    "value": { "$var": "count" },
+    "max": 100,
+    "width": 360,
+    "style": { "fill": "#3478CF", "fillOpacity": 0.9 }
+  }
+}
+```
+````
+
+## New primitives
+
+- `memory-layout`: segments with `name`, `bytes`, `tone`, `style`, and `padding`; segment width is proportional to byte count. `scale` sets SVG units per byte.
+- `grid`: `columns` and `children` arranged in rows.
+- `table`: `rows` (strings and numbers) and minimum column `widths`.
+- `metric`: large `code` value and `title`.
+- `bar`: numeric `value` and `max`, labelled by `title`.
+- `divider`: horizontal line.
+- `ellipse`: set container with children.
+
+## Export
+
+SVG downloads follow the selected parameters. Command-line usage:
+
+```bash
+npm run diagrams:export -- article.md ./images both all
+npm run diagrams:export -- diagram.json ./images dark '{"count":10000}'
+npm run diagrams:html -- article.md ./visuals.html en
+```
+
+`all` enumerates finite choices (up to 48 combinations) with default slider values. Parameter JSON is for a single diagram with matching controls. SVG captures one state; HTML embeds diagrams, styles, and interactive code for local use without Book or network requests.
+
+## Limits
+
+Text measurement is approximate; long labels may require extra width. Crossings between individual edges and labels are not fully optimized. Tables and grids share the general layout engine. Sliders do not execute code. A future field editor can reuse `computeMemoryLayout` in `model.ts`; editing fields is not part of the current format.

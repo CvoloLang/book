@@ -286,3 +286,21 @@ The command extracts every `diagram` block into separate SVG files. A JSON file 
 Run `npm run diagrams:test` for tests. Invalid properties, duplicate IDs and missing edge targets produce diagnostics at build time. Wide diagrams scroll horizontally on mobile so labels remain readable.
 
 First-version limits: 60 elements, 40 edges, 10 nesting levels; no interactive graphs, animations or fully automatic layout of arbitrary graphs. Use explicit rows, columns and gaps for complex figures.
+
+## Styling
+
+The root accepts a minimum `width` and `style` (background, border, opacity and radius). Element and edge styles support:
+
+| Property | Purpose |
+| --- | --- |
+| `color` | HEX accent |
+| `fill`, `stroke`, `textColor` | Independent HEX colors |
+| `fillOpacity`, `strokeOpacity` | Opacity from 0 to 1 |
+| `strokeWidth`, `radius` | Border width and corner radius |
+| `fontSize`, `valueSize` | Text and value sizes |
+| `textAlign` | start, center, end |
+| `dashed` | Dashed border |
+
+Use #RGB, #RGBA, #RRGGBB or #RRGGBBAA. HEX alpha multiplies explicit opacity; set `fillOpacity: 1` for an opaque fill. Edges support `label` and `arrow: false` for connectors without arrowheads. Properties apply to relevant primitives, not arbitrary CSS.
+
+See [interactive visualizations](2-7-interactive-diagrams.md).
