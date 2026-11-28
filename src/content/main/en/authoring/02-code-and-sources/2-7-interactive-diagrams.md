@@ -2121,4 +2121,4 @@ npm run diagrams:html -- article.md ./visuals.html en
 
 Text measurement is approximate; long labels may require extra width. Crossings between individual edges and labels are not fully optimized. Tables and grids share the general layout engine. Sliders do not execute code. A future field editor can reuse `computeMemoryLayout` in `model.ts`; editing fields is not part of the current format.
 
-Diagrams fit the available width by default. Use “Original size” in the top-right menu to inspect fine details (narrow screens may then scroll horizontally), or “Fit to width” to restore the default.
+The title and “⋯” menu remain in the card header outside the scrolling graphic. On mobile viewports (up to 767 CSS pixels), diagrams retain their original size and scroll horizontally if needed; larger viewports fit the available width. The menu lets readers override the mode for each diagram. Standalone SVG exports retain their title.

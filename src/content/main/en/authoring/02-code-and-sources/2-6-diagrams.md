@@ -283,7 +283,7 @@ npm run diagrams:export -- path/to/article.md ./images both
 
 The command extracts every `diagram` block into separate SVG files. A JSON file containing a single diagram is also accepted. Use `light` or `dark` instead of `both` to export one variant.
 
-Run `npm run diagrams:test` for tests. Invalid properties, duplicate IDs and missing edge targets produce diagnostics at build time. On narrow screens SVG scales proportionally to the available width; interactive cards fill the article width.
+Run `npm run diagrams:test` for tests. Invalid properties, duplicate IDs and missing edge targets produce diagnostics at build time. On viewports up to 767 CSS pixels, wide diagrams scroll horizontally within the graphic area; on larger screens SVG fits the available width. Interactive cards fill the article width.
 
 First-version limits: 60 elements, 40 edges, 10 nesting levels; no interactive graphs, animations or fully automatic layout of arbitrary graphs. Use explicit rows, columns and gaps for complex figures.
 
@@ -305,4 +305,4 @@ Use #RGB, #RGBA, #RRGGBB or #RRGGBBAA. HEX alpha multiplies explicit opacity; se
 
 See [interactive visualizations](2-7-interactive-diagrams.md).
 
-Diagrams fit the available width by default. Use “Original size” in the top-right menu to inspect fine details (narrow screens may then scroll horizontally), or “Fit to width” to restore the default.
+The title and “⋯” menu remain in the card header outside the scrolling graphic. On mobile viewports (up to 767 CSS pixels), diagrams retain their original size and scroll horizontally if needed; larger viewports fit the available width. The menu lets readers override the mode for each diagram. Standalone SVG exports retain their title.
