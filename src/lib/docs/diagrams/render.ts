@@ -633,7 +633,7 @@ export function renderDiagramFigure(source: string, contextKey: string, id: stri
   const toolbar = '<div class="book-diagram-toolbar"><details class="book-diagram-menu">' +
     '<summary aria-label="' + actionsLabel + '" title="' + actionsLabel + '">' + toolbarIcon('more') + '</summary>' +
     '<div class="book-diagram-menu-panel">' +
-    link('light', ru ? 'SVG (светлая)' : 'SVG (light)') + link('dark', ru ? 'SVG (тёмная)' : 'SVG (dark)') +
+    link('light', ru ? 'Скачать SVG (светлая)' : 'Download SVG (light)') + link('dark', ru ? 'Скачать SVG (тёмная)' : 'Download SVG (dark)') +
     '<button type="button" data-diagram-size aria-pressed="false" data-fit-label="' + (ru ? 'Вписать в ширину' : 'Fit to width') +
     '" data-native-label="' + (ru ? 'Исходный размер' : 'Original size') + '">' + toolbarIcon('expand') + '<span>' +
     (ru ? 'Исходный размер' : 'Original size') + '</span></button></div></details></div>';

@@ -127,7 +127,7 @@
   background: var(--book-diagram-background);
   box-shadow: 0 8px 24px rgb(0 0 0 / .16);
 }
-.book-diagram .book-diagram-menu-panel > :is(a, button) {
+.book-diagram .book-diagram-menu .book-diagram-menu-panel > :is(a, button) {
   display: flex;
   align-items: center;
   gap: .55rem;
@@ -146,7 +146,7 @@
   cursor: pointer;
 }
 .book-diagram-menu-panel > :is(a, button) > svg { flex: none; }
-.book-diagram .book-diagram-menu-panel > :is(a, button):hover {
+.book-diagram .book-diagram-menu .book-diagram-menu-panel > :is(a, button):hover {
   background: color-mix(in srgb, var(--book-diagram-neutral) 12%, transparent);
 }
 .book-diagram-menu > summary:focus-visible,
@@ -160,5 +160,5 @@
 }
 @media (pointer: coarse) {
   .book-diagram-menu > summary { width: 2.75rem; height: 2.75rem; }
-  .book-diagram .book-diagram-menu-panel > :is(a, button) { min-height: 2.75rem; }
+  .book-diagram .book-diagram-menu .book-diagram-menu-panel > :is(a, button) { min-height: 2.75rem; }
 }
