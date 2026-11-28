@@ -1,6 +1,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { renderDiagramSvg } from '../src/lib/docs/diagrams/render.ts';
+import { getVariants } from '../src/lib/docs/diagrams/model.ts';
 
 // Only top-level fenced diagram blocks are exported. Other fenced examples,
 // including four-backtick Markdown examples that contain diagram fences, are
@@ -25,9 +26,9 @@ export function extractDiagrams(markdown) {
 }
 
 async function main() {
-  const [sourceFile, outputDirectory, theme = 'both'] = process.argv.slice(2);
+  const [sourceFile, outputDirectory, theme = 'both', stateOption] = process.argv.slice(2);
   if (!sourceFile || !outputDirectory || !['light', 'dark', 'both'].includes(theme)) {
-    throw new Error('Usage: npm run diagrams:export -- <article.md|diagram.json> <output-directory> [light|dark|both]');
+    throw new Error('Usage: npm run diagrams:export -- <article.md|diagram.json> <output-directory> [light|dark|both] [all|state-json]');
   }
   const input = await readFile(sourceFile, 'utf8');
   const diagrams = path.extname(sourceFile).toLowerCase() === '.json'
@@ -40,8 +41,12 @@ async function main() {
   for (const [index, diagram] of diagrams.entries()) {
     for (const variant of themes) {
       try {
-        outputs.push({ name: stem + '-' + (index + 1) + '-' + variant + '.svg',
-          svg: renderDiagramSvg(diagram.source, variant) });
+        const states = stateOption === 'all' ? getVariants(diagram.source) : [stateOption ? JSON.parse(stateOption) : {}];
+        for (const [stateIndex, state] of states.entries()) {
+          const suffix = states.length > 1 ? '-state-' + (stateIndex + 1) : '';
+          outputs.push({ name: stem + '-' + (index + 1) + suffix + '-' + variant + '.svg',
+            svg: renderDiagramSvg(diagram.source, variant, state) });
+        }
       } catch (error) {
         throw new Error(sourceFile + ':' + diagram.line + ': ' + error.message, { cause: error });
       }

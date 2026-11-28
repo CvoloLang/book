@@ -1,3 +1,5 @@
+import { getControls, getState, getVariants, materializeDiagram, type State, type Control } from './model.ts';
+
 /**
  * Declarative documentation diagrams. No browser, font measurement API,
  * third-party layout dependency or author-supplied HTML is required.
@@ -536,8 +538,8 @@ function paintEdge(points: Point[], edge: Edge, theme: Theme) {
     ' ' + (base.x + 4 * dy) + ',' + (base.y - 4 * dx) + '" fill="' + stroke + '" fill-opacity="' + opacity + '"/>' : '') + label;
 }
 
-function build(source: string) {
-  const diagram = parse(source);
+function build(source: string, state: State = {}) {
+  const diagram = parse(materializeDiagram(source, state));
   const layout = measure(diagram.body);
   const width = Math.max(diagram.width ?? 320, layout.bounds.w + 48,
     Math.min(800, textWidth(diagram.title, 18, false) + 52),
@@ -571,21 +573,45 @@ function build(source: string) {
 }
 
 /** Portable SVG with explicit colors and dimensions; usable as ![](file.svg). */
-export function renderDiagramSvg(source: string, theme: 'light' | 'dark' = 'light'): string {
-  return build(source).svg(theme);
+export function renderDiagramSvg(source: string, theme: Theme = 'light', state: State = {}): string {
+  return build(source,state).svg(theme);
 }
 
-/** Server-rendered article figure and two standalone, downloadable SVGs. */
+/** Server-rendered controls, default SVG and portable downloads. */
+function renderControls(controls: Control[], id: string) {
+  return controls.map((control) => {
+    const name = escape(id + '-' + control.id);
+    const label = escape(control.label);
+    if (control.kind === 'slider') {
+      return '<label class="book-diagram-control"><span>' + label + ' <output data-diagram-output="' + control.id + '">' + control.default + '</output></span>' +
+        '<input type="range" name="' + name + '" data-diagram-control="' + control.id + '" min="' + control.min + '" max="' + control.max + '" step="' + control.step + '" value="' + control.default + '"></label>';
+    }
+    if (control.kind === 'select') {
+      return '<label class="book-diagram-control"><span>' + label + '</span><select name="' + name + '" data-diagram-control="' + control.id + '">' +
+        control.options.map((option,i) => '<option value="' + i + '"' + (option.value === control.default ? ' selected' : '') + '>' + escape(option.label) + '</option>').join('') + '</select></label>';
+    }
+    return '<fieldset class="book-diagram-control"><legend>' + label + '</legend><div class="book-diagram-options">' +
+      control.options.map((option,i) => '<label><input type="radio" name="' + name + '" data-diagram-control="' + control.id + '" value="' + i + '"' +
+        (option.value === control.default ? ' checked' : '') + '><span>' + escape(option.label) + '</span></label>').join('') + '</div></fieldset>';
+  }).join('');
+}
+
 export function renderDiagramFigure(source: string, contextKey: string, id: string): string {
-  const diagram = build(source);
+  const controls = getControls(source);
+  const state = getState(controls);
+  const diagram = build(source,state);
+  // Validate every finite option combination (slider uses its default).
+  for (const variant of getVariants(source)) build(source,variant);
   const ru = contextKey.split('/').at(-1) === 'ru';
   const filename = 'diagram-' + id.replace(/[^a-zA-Z0-9_-]/g, '-');
   function link(theme: 'light' | 'dark', label: string) {
-    return '<a download="' + filename + '-' + theme + '.svg" href="data:image/svg+xml;charset=utf-8,' +
+    return '<a data-diagram-export="' + theme + '" download="' + filename + '-' + theme + '.svg" href="data:image/svg+xml;charset=utf-8,' +
       encodeURIComponent(diagram.svg(theme)) + '">' + label + '</a>';
   }
-  return '<figure class="book-diagram" style="--book-diagram-width:' + diagram.width + 'px"><div class="book-diagram-scroll" tabindex="0" aria-label="' +
-    (ru ? 'Схема' : 'Diagram') + '">' + diagram.svg('book') + '</div><div class="book-diagram-actions">' +
-    link('light', ru ? 'SVG (светлая)' : 'SVG (light)') + link('dark', ru ? 'SVG (тёмная)' : 'SVG (dark)') +
-    '</div></figure>';
+  const interactive = controls.length ? ' data-diagram-source="' + escape(source) + '"' : '';
+  return '<figure class="book-diagram' + (controls.length ? ' book-diagram-interactive' : '') + '" style="--book-diagram-width:' + diagram.width + 'px"' + interactive + '>' +
+    (controls.length ? '<div class="book-diagram-controls">' + renderControls(controls,filename) + '</div>' : '') +
+    '<div class="book-diagram-scroll" tabindex="0" aria-label="' + (ru ? 'Схема' : 'Diagram') + '">' +
+    diagram.svg('book') + '</div><div data-diagram-error role="status" hidden></div><div class="book-diagram-actions">' +
+    link('light', ru ? 'SVG (светлая)' : 'SVG (light)') + link('dark', ru ? 'SVG (тёмная)' : 'SVG (dark)') + '</div></figure>';
 }

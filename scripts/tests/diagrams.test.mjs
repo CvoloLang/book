@@ -88,3 +88,11 @@ test('memory strip preserves byte proportions and padding', () => {
  const svg=renderDiagramSvg(JSON.stringify({body:{kind:'memory-layout',scale:32,segments:[{name:'K',bytes:1},{name:'Padding',bytes:3,padding:true},{name:'Value',bytes:4}]}}));
  assert.match(svg,/width="32" height="54"/); assert.match(svg,/width="96" height="54"/); assert.match(svg,/width="128" height="54"/); assert.match(svg,/stroke-dasharray="5 3"/);
 });
+
+test('interactive controls resolve safe numeric expressions and export selected state', () => {
+  const source = JSON.stringify({controls:[{kind:'slider',id:'count',label:'Count',min:1,max:100,default:10}],
+    body:{kind:'bar',title:{$format:'bytes',value:{$op:'mul',args:[{$var:'count'},4]}},value:{$var:'count'},max:100}});
+  assert.match(renderDiagramSvg(source,'light',{count:20}),/>80 B<\/text>/);
+  assert.match(renderDiagramFigure(source,'main/en','interactive'),/type="range"/);
+  assert.throws(()=>renderDiagramSvg(source,'light',{count:101}),/invalid value/);
+});

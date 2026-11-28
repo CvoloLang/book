@@ -7,6 +7,7 @@
   import type { TopicPage } from '$lib/docs/types';
   import siteConfig from '$lib/generated/site-config.json';
   import { t } from '$lib/i18n';
+  import { enhanceDiagrams } from '$lib/docs/diagrams/client';
 
   let { data }: { data: { topic: TopicPage; html: string } } = $props();
   let mobileNav = $state(false);
@@ -257,10 +258,11 @@
     };
 
     node.addEventListener('click', articleClick);
+    const destroyDiagrams = enhanceDiagrams(node);
     scheduleDecoration();
     return {
       update() { scheduleDecoration(); },
-      destroy() { node.removeEventListener('click', articleClick); }
+      destroy() { ++generation; destroyDiagrams(); node.removeEventListener('click', articleClick); }
     };
   }
 
