@@ -4,6 +4,7 @@ import sourceLinksData from '$lib/generated/source-links.json';
 import anchorsData from '$lib/generated/anchors.json';
 import siteConfigData from '$lib/generated/site-config.json';
 import { escapeHtml, highlightCode } from './highlighter.server';
+import { renderDiagramFigure } from './diagrams/render';
 
 const sourceLinks = sourceLinksData as unknown as Record<string, Record<string, string>>;
 const anchors = anchorsData as unknown as Record<string, Record<string, Record<string, string>>>;
@@ -301,7 +302,7 @@ type CodeBlock = {
   code: string;
   tab?: string;
   tabGroup?: number;
-  kind: 'code' | 'files' | 'input' | 'output';
+  kind: 'code' | 'files' | 'input' | 'output' | 'diagram';
   lineNumbers: boolean;
   highlightedLines: number[];
   markedText: string[];
@@ -470,8 +471,10 @@ function extractCodeBlocks(markdown: string, sharedDefinitions: GoToDefinitionRu
     }
 
     const id = `cvolo-code-${blocks.length}`;
-    const kind = /^(?:files?|filetree|tree)$/i.test(language)
-      ? 'files'
+    const kind = /^diagram$/i.test(language)
+      ? 'diagram'
+      : /^(?:files?|filetree|tree)$/i.test(language)
+        ? 'files'
       : /^(?:input|stdin)$/i.test(language)
         ? 'input'
         : /^(?:output|stdout|result)$/i.test(language)
@@ -1141,6 +1144,15 @@ export async function renderMarkdown(markdown: string, currentSlug: string, sour
 
   const rendered = new Map<string, { html: string; language: string }>();
   for (const block of extracted.blocks) {
+    if (block.kind === 'diagram') {
+      try {
+        rendered.set(block.id, { html: renderDiagramFigure(block.code, contextKey, block.id), language: 'diagram' });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        throw new Error(`${sourcePath}:${block.sourceLine + 1}: ${message}`);
+      }
+      continue;
+    }
     if (block.kind === 'files') {
       rendered.set(block.id, { html: renderFileTree(block.code, block.fileSource), language: 'files' });
       continue;
@@ -1215,10 +1227,10 @@ export async function renderMarkdown(markdown: string, currentSlug: string, sour
   for (const block of extracted.blocks) {
     if (groupedIds.has(block.id)) continue;
     const item = rendered.get(block.id)!;
-    const replacement = block.kind === 'files' || block.kind === 'input' || block.kind === 'output'
+    const replacement = block.kind === 'files' || block.kind === 'input' || block.kind === 'output' || block.kind === 'diagram'
       ? item.html
       : renderCodeFrame(block, item.html, item.language);
-    html = html.replace(codePlaceholder(block.id), replacement);
+    html = html.replace(codePlaceholder(block.id), () => replacement);
   }
 
   html = decorateAdmonitions(html);

@@ -206,12 +206,12 @@ function shift(layout: Layout, x: number, y: number) {
   for (const child of layout.children) shift(child, x, y);
 }
 
-function measure(element: Element, cell = false): Layout {
+function measure(element: Element): Layout {
   const { kind } = element;
   const framed = kind === 'group' || kind === 'node';
   const padding = kind === 'group' ? 18 : kind === 'node' ? 14 : 0;
   const horizontal = kind === 'row' || kind === 'cells';
-  const children = element.children.map((child) => measure(child, kind === 'cells'));
+  const children = element.children.map((child) => measure(child));
   const gap = element.gap;
   if (kind === 'space') return { element, bounds: { x: 0, y: 0, w: element.width ?? 8, h: element.height ?? 24 }, children, lines: [] };
 
@@ -253,9 +253,6 @@ function measure(element: Element, cell = false): Layout {
       cursor += child.bounds.h + gap;
     }
   }
-  // A cell is a normal node geometrically; its square border is selected by
-  // its parent's kind during painting.
-  void cell;
   return { element, bounds: { x: 0, y: 0, w, h }, children, lines };
 }
 
@@ -278,7 +275,7 @@ function anchor(rect: Rect, side: Side): Point {
   }
 }
 
-function outward(point: Point, side: Side, distance = 12): Point {
+function outward(point: Point, side: Side, distance = 6): Point {
   return {
     x: point.x + (side === 'right' ? distance : side === 'left' ? -distance : 0),
     y: point.y + (side === 'bottom' ? distance : side === 'top' ? -distance : 0)
@@ -399,7 +396,8 @@ function paint(layout: Layout, theme: Theme, cell = false): string {
 function paintEdge(points: Point[], tone: Tone, theme: Theme) {
   const end = points[points.length - 1], prev = points[points.length - 2];
   const dx = Math.sign(end.x - prev.x), dy = Math.sign(end.y - prev.y);
-  const base = { x: end.x - 9 * dx, y: end.y - 9 * dy };
+  const tipLength = Math.min(9, Math.abs(end.x - prev.x) + Math.abs(end.y - prev.y));
+  const base = { x: end.x - tipLength * dx, y: end.y - tipLength * dy };
   const stroke = color(theme, tone);
   return '<polyline points="' + [...points.slice(0, -1), base].map((p) => p.x + ',' + p.y).join(' ') +
     '" fill="none" stroke="' + stroke + '" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>' +
@@ -446,7 +444,7 @@ export function renderDiagramSvg(source: string, theme: 'light' | 'dark' = 'ligh
 /** Server-rendered article figure and two standalone, downloadable SVGs. */
 export function renderDiagramFigure(source: string, contextKey: string, id: string): string {
   const diagram = build(source);
-  const ru = /^ru(?:$|[:/|_-])/.test(contextKey) || /(?:^|[:/|_-])ru$/.test(contextKey);
+  const ru = contextKey.split('/').at(-1) === 'ru';
   const filename = 'diagram-' + id.replace(/[^a-zA-Z0-9_-]/g, '-');
   function link(theme: 'light' | 'dark', label: string) {
     return '<a download="' + filename + '-' + theme + '.svg" href="data:image/svg+xml;charset=utf-8,' +

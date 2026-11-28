@@ -1,0 +1,73 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import { renderDiagramSvg, renderDiagramFigure } from '../../src/lib/docs/diagrams/render.ts';
+import { extractDiagrams } from '../export-diagrams.mjs';
+
+const example = {
+  title: 'Transfer', caption: 'No duplicate resource',
+  body: { kind: 'column', gap: 28, children: [
+    { kind: 'node', id: 'a', code: 'first', moved: true, text: 'Moved' },
+    { kind: 'node', id: 'b', title: 'Resource', tone: 'owner' }
+  ] },
+  edges: [{ from: 'a', to: 'b' }]
+};
+const source = JSON.stringify(example);
+
+test('standalone SVG has fixed theme, dimensions, accessible title and an arrow', () => {
+  const svg = renderDiagramSvg(source);
+  assert.match(svg, /^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg"/);
+  assert.match(svg, /viewBox="0 0 \d+ \d+"/);
+  assert.match(svg, /<title>Transfer<\/title>/);
+  assert.match(svg, /stroke-dasharray="6 4"/);
+  assert.match(svg, /text-decoration="line-through"/);
+  assert.match(svg, /<polygon/);
+  assert.ok(!svg.includes('var(--'));
+  assert.notEqual(svg, renderDiagramSvg(source, 'dark'));
+  assert.equal(svg, renderDiagramSvg(source));
+});
+
+test('embedded figure uses theme variables and exports both standalone SVG variants', () => {
+  const figure = renderDiagramFigure(source, 'main/ru', 'sample');
+  assert.match(figure, /var\(--book-diagram-owner/);
+  assert.match(figure, /SVG \(светлая\)/);
+  const links = [...figure.matchAll(/href="data:image\/svg\+xml;charset=utf-8,([^"]+)"/g)];
+  assert.equal(links.length, 2);
+  assert.equal(decodeURIComponent(links[0][1]), renderDiagramSvg(source, 'light'));
+  assert.equal(decodeURIComponent(links[1][1]), renderDiagramSvg(source, 'dark'));
+});
+
+test('author-supplied text is escaped and schema rejects injection or invalid edges', () => {
+  const dangerous = JSON.stringify({ body: { kind: 'node', title: '<script>&"' } });
+  assert.match(renderDiagramSvg(dangerous), /&lt;script&gt;&amp;&quot;/);
+  assert.ok(!renderDiagramSvg(dangerous).includes('<script>'));
+  assert.throws(() => renderDiagramSvg('not JSON'), /Diagram:/);
+  assert.throws(() => renderDiagramSvg(JSON.stringify({ body: { kind: 'node', onload: 'alert(1)' } })), /unknown property/);
+  assert.throws(() => renderDiagramSvg(JSON.stringify({ ...example, edges: [{ from: 'a', to: 'missing' }] })), /unknown id/);
+  assert.throws(() => renderDiagramSvg(JSON.stringify({ body: { kind: 'row', children: [
+    { kind: 'node', id: 'x' }, { kind: 'node', id: 'x' }
+  ] } })), /duplicate id/);
+});
+
+test('export extracts only actual diagram fences, not examples inside other fences', () => {
+  const tick = String.fromCharCode(96);
+  const fence = tick.repeat(3);
+  const outer = tick.repeat(4);
+  const markdown = [outer + 'markdown', fence + 'diagram', source, fence, outer,
+    '~~~diagram', source, '~~~', fence + 'diagram', source, fence].join('\n');
+  assert.deepEqual(extractDiagrams(markdown).map((item) => item.source), [source, source]);
+  assert.throws(() => extractDiagrams(fence + 'diagram\n' + source), /Unclosed/);
+});
+
+for (const lang of ['ru', 'en']) {
+  test('all authoring examples render in both themes (' + lang + ')', async () => {
+    const filename = new URL('../../src/content/main/' + lang + '/authoring/02-code-and-sources/2-6-diagrams.md', import.meta.url);
+    const blocks = extractDiagrams(await readFile(filename, 'utf8'));
+    assert.equal(blocks.length, 4);
+    for (const block of blocks) {
+      for (const theme of ['light', 'dark']) {
+        assert.match(renderDiagramSvg(block.source, theme), /<\/svg>$/);
+      }
+    }
+  });
+}

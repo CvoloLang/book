@@ -6,11 +6,13 @@
   "scripts": {
     "docs:build": "node scripts/build-content.mjs",
     "dev": "npm run docs:build && npm run docs:verify && svelte-kit sync && vite dev",
-    "build": "npm run docs:build && npm run docs:verify && svelte-kit sync && vite build",
+    "build": "npm run diagrams:test && npm run docs:build && npm run docs:verify && svelte-kit sync && vite build",
     "preview": "vite preview",
-    "check": "npm run docs:build && npm run docs:verify && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "check": "npm run diagrams:test && npm run docs:build && npm run docs:verify && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "prepare": "npm run docs:build && svelte-kit sync",
-    "docs:verify": "node scripts/verify-content.mjs"
+    "docs:verify": "node scripts/verify-content.mjs",
+    "diagrams:test": "node --experimental-strip-types --test scripts/tests/diagrams.test.mjs",
+    "diagrams:export": "node --experimental-strip-types scripts/export-diagrams.mjs"
   },
   "devDependencies": {
     "@sveltejs/adapter-static": "^3.0.10",
