@@ -37,7 +37,7 @@ type Element = {
   align: Align;
   children: Element[];
 };
-type Edge = { from: string; to: string; tone: Tone; style: Style; label?: string; arrow: boolean; fromSide?: Side; toSide?: Side };
+type Edge = { from: string; to: string; tone: Tone; style: Style; label?: string; arrow: boolean; gap: number; fromSide?: Side; toSide?: Side };
 type Diagram = { title: string; caption: string; align?: 'left' | 'center' | 'right'; width?: number; style: Style; body: Element; edges: Edge[] };
 type Point = { x: number; y: number };
 type Rect = Point & { w: number; h: number };
@@ -198,13 +198,13 @@ function parse(source: string): Diagram {
   if (rawEdges.length > 40) fail('maximum 40 edges');
   const edges = rawEdges.map((value): Edge => {
     const edge = record(value, 'edge');
-    keys(edge, ['from', 'to', 'tone', 'fromSide', 'toSide', 'style', 'label', 'arrow'], 'edge');
+    keys(edge, ['from', 'to', 'tone', 'fromSide', 'toSide', 'style', 'label', 'arrow', 'gap'], 'edge');
     if (edge.arrow !== undefined && typeof edge.arrow !== 'boolean') fail('edge.arrow must be boolean');
     const from = identifier(edge.from, 'from');
     const to = identifier(edge.to, 'to');
     if (!from || !to || !ids.has(from) || !ids.has(to)) fail('edge references an unknown id');
     if (from === to) fail('self-edges are not supported');
-    return { from, to, tone: choice(edge.tone, tones, 'edge tone') ?? 'owner', style: parseStyle(edge.style), label: string(edge.label, 'edge.label', 80), arrow: edge.arrow !== false,
+    return { from, to, tone: choice(edge.tone, tones, 'edge tone') ?? 'owner', style: parseStyle(edge.style), label: string(edge.label, 'edge.label', 80), arrow: edge.arrow !== false, gap: number(edge.gap, 'edge.gap', 0, 24) ?? (edge.arrow === false ? 0 : 5),
       fromSide: choice(edge.fromSide, sides, 'fromSide'), toSide: choice(edge.toSide, sides, 'toSide') };
   });
   return { title: string(root.title, 'title') ?? '', caption: string(root.caption, 'caption', 400) ?? '', align: choice(root.align, ['left', 'center', 'right'], 'root.align'), width: number(root.width, 'width', 320, 1600), style: parseStyle(root.style), body, edges };
@@ -433,7 +433,25 @@ function route(edge: Edge, items: Layout[], canvas: Rect): Point[] {
     if (length < cost) { best = points; cost = length; }
   }
   if (!best) fail('cannot route ' + edge.from + ' → ' + edge.to + '; increase gaps or specify edge sides');
-  return best;
+  return insetEdgeEndpoints(best, edge.gap);
+}
+
+/** Leave breathing room at both endpoints without rerouting the edge.
+ * Cap the inset for short legs so even tightly packed nodes remain connected.
+ * A straight path shares its available length between the two insets.
+ */
+function insetEdgeEndpoints(points: Point[], gap: number): Point[] {
+  if (gap === 0 || points.length < 2) return points;
+  const inset = (point: Point, neighbor: Point): Point => {
+    const length = Math.abs(neighbor.x - point.x) + Math.abs(neighbor.y - point.y);
+    const distance = Math.min(gap, length / (points.length === 2 ? 3 : 2));
+    return {
+      x: point.x + Math.sign(neighbor.x - point.x) * distance,
+      y: point.y + Math.sign(neighbor.y - point.y) * distance
+    };
+  };
+  const last = points.length - 1;
+  return [inset(points[0], points[1]), ...points.slice(1, last), inset(points[last], points[last - 1])];
 }
 
 function escape(value: string) {

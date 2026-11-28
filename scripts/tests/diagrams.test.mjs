@@ -218,3 +218,20 @@ test('figure alignment is optional, validated and independent of SVG geometry', 
   assert.doesNotMatch(renderDiagramFigure(JSON.stringify(base),'en','default'),/data-diagram-align=/);
   assert.throws(()=>renderDiagramSvg(JSON.stringify({...base,align:'invalid'})),/root.align/);
 });
+
+test('arrow endpoints have a gap from both nodes; zero gap keeps contact', () => {
+  const body = {kind:'column',gap:38,children:[
+    {kind:'node',id:'a',title:'A',width:120,height:60},
+    {kind:'node',id:'b',title:'B',width:120,height:60}
+  ]};
+  const render = (edge) => renderDiagramSvg(JSON.stringify({body,edges:[{from:'a',to:'b',...edge}]}));
+  const endpoints = (svg) => {
+    const line = svg.match(/<polyline points="([^"]+)"/)[1];
+    const arrow = svg.match(/<polygon points="([^"]+)"/)[1];
+    return [Number(line.split(' ')[0].split(',')[1]), Number(arrow.split(' ')[0].split(',')[1])];
+  };
+  const touching = endpoints(render({gap:0}));
+  assert.deepEqual(endpoints(render({})),[touching[0]+5,touching[1]-5]);
+  assert.deepEqual(endpoints(render({gap:8})),[touching[0]+8,touching[1]-8]);
+  assert.throws(()=>render({gap:-1}),/edge.gap/);
+});
