@@ -81,6 +81,40 @@ export function enhanceDiagrams(article: HTMLElement) {
     menu.open = false;
     if (restoreFocus) menu.querySelector('summary')?.focus();
   }
+  function setView(figure: HTMLElement, view: string) {
+    if (view !== 'preview' && view !== 'source') return;
+    for (const button of figure.querySelectorAll<HTMLButtonElement>('[data-diagram-view]')) {
+      button.setAttribute('aria-pressed', String(button.dataset.diagramView === view));
+    }
+    for (const panel of figure.querySelectorAll<HTMLElement>('[data-diagram-panel]')) {
+      panel.hidden = panel.dataset.diagramPanel !== view;
+    }
+  }
+  function onViewClick(event: MouseEvent) {
+    if (!(event.target instanceof Element)) return;
+    const button = event.target.closest<HTMLButtonElement>('[data-diagram-view]');
+    const figure = button?.closest<HTMLElement>('.book-diagram');
+    if (figure && button?.dataset.diagramView) setView(figure, button.dataset.diagramView);
+  }
+  async function copySource(figure: HTMLElement, button: HTMLButtonElement) {
+    const code = figure.querySelector<HTMLElement>('[data-diagram-markdown]');
+    const status = figure.querySelector<HTMLElement>('[data-diagram-copy-status]');
+    if (!code || !status) return;
+    try {
+      const clipboard = owner.defaultView?.navigator.clipboard;
+      if (!clipboard) throw new Error('Clipboard unavailable');
+      await clipboard.writeText(code.textContent ?? '');
+      status.textContent = button.dataset.copySuccess ?? 'Source copied';
+    } catch {
+      setView(figure, 'source');
+      const range = owner.createRange();
+      range.selectNodeContents(code);
+      const selection = owner.getSelection();
+      selection?.removeAllRanges();
+      selection?.addRange(range);
+      status.textContent = button.dataset.copyFailure ?? 'Copy failed';
+    }
+  }
   function onMenuClick(event: MouseEvent) {
     if (!(event.target instanceof Element)) return;
     const target = event.target;
@@ -89,6 +123,13 @@ export function enhanceDiagrams(article: HTMLElement) {
       if (open !== menu) closeMenu(open);
     }
     if (!menu || !article.contains(menu)) return;
+    const copyButton = target.closest<HTMLButtonElement>('[data-diagram-copy]');
+    if (copyButton) {
+      const figure = menu.closest<HTMLElement>('.book-diagram');
+      if (figure) void copySource(figure, copyButton);
+      closeMenu(menu, true);
+      return;
+    }
     const sizeButton = target.closest<HTMLButtonElement>('[data-diagram-size]');
     if (sizeButton) {
       const figure = menu.closest<HTMLElement>('.book-diagram');
@@ -115,11 +156,13 @@ export function enhanceDiagrams(article: HTMLElement) {
   }
   owner.addEventListener('click', onMenuClick);
   owner.addEventListener('keydown', onMenuKeydown);
+  article.addEventListener('click',onViewClick);
   article.addEventListener('click',beforeDownload);
   article.addEventListener('input',onInput);
   return () => {
     owner.removeEventListener('click', onMenuClick);
     owner.removeEventListener('keydown', onMenuKeydown);
+    article.removeEventListener('click',onViewClick);
     article.removeEventListener('click',beforeDownload);
     article.removeEventListener('input',onInput);
     if (frame) cancelAnimationFrame(frame);

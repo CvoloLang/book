@@ -611,12 +611,14 @@ function renderControls(controls: Control[], id: string) {
 
 // The toolbar is HTML, not part of the exported SVG. Keep its actions
 // accessible without introducing an additional UI dependency.
-function toolbarIcon(name: 'more' | 'download' | 'expand') {
+function toolbarIcon(name: 'more' | 'download' | 'expand' | 'copy') {
   const content = name === 'more'
     ? '<circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>'
     : name === 'download'
       ? '<path d="M12 3v12m-5-5 5 5 5-5M4 16v4h16v-4"/>'
-      : '<path d="M8 4H4v4m12-4h4v4M4 16v4h4m12-4v4h-4"/>';
+      : name === 'copy'
+        ? '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>'
+        : '<path d="M8 4H4v4m12-4h4v4M4 16v4h4m12-4v4h-4"/>';
   return '<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="' +
     (name === 'more' ? 'currentColor' : 'none') + '" stroke="' +
     (name === 'more' ? 'none' : 'currentColor') + '" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + content + '</svg>';
@@ -642,11 +644,17 @@ export function renderDiagramFigure(source: string, contextKey: string, id: stri
     '<summary aria-label="' + actionsLabel + '" title="' + actionsLabel + '">' + toolbarIcon('more') + '</summary>' +
     '<div class="book-diagram-menu-panel">' +
     link('light', ru ? 'Скачать SVG (светлая)' : 'Download SVG (light)') + link('dark', ru ? 'Скачать SVG (тёмная)' : 'Download SVG (dark)') +
+    '<button type="button" data-diagram-copy data-copy-success="' + (ru ? 'Код скопирован' : 'Source copied') + '" data-copy-failure="' + (ru ? 'Не удалось скопировать. Выделите код вручную.' : 'Copy failed. Select the source manually.') + '">' + toolbarIcon('copy') + '<span>' + (ru ? 'Копировать Markdown' : 'Copy Markdown') + '</span></button>' +
     '<button type="button" data-diagram-size>' + toolbarIcon('expand') +
     '<span class="book-diagram-show-native">' + (ru ? 'Исходный размер' : 'Original size') + '</span>' +
     '<span class="book-diagram-show-fit">' + (ru ? 'Вписать в ширину' : 'Fit to width') + '</span></button></div></details></div>';
-  return '<figure class="book-diagram' + (controls.length ? ' book-diagram-interactive' : '') + '" style="--book-diagram-width:' + preferredWidth + 'px"' + interactive + '>' + toolbar +
+  const sourceTabs = '<div class="book-diagram-view-tabs" role="group" aria-label="' + (ru ? 'Вид схемы' : 'Diagram view') + '">' +
+    '<button type="button" data-diagram-view="preview" aria-pressed="true">' + (ru ? 'Просмотр' : 'Preview') + '</button>' +
+    '<button type="button" data-diagram-view="source" aria-pressed="false">' + (ru ? 'Исходник' : 'Source') + '</button></div>';
+  const markdown = '\x60\x60\x60diagram\n' + source + '\n\x60\x60\x60';
+  const sourcePanel = '<div class="book-diagram-source" data-diagram-panel="source" hidden><pre tabindex="0"><code data-diagram-markdown>' + escape(markdown) + '</code></pre></div>';
+  return '<figure class="book-diagram' + (controls.length ? ' book-diagram-interactive' : '') + '" style="--book-diagram-width:' + preferredWidth + 'px"' + interactive + '>' + toolbar + sourceTabs + '<div data-diagram-panel="preview">' +
     (controls.length ? '<div class="book-diagram-controls">' + renderControls(controls,filename) + '</div>' : '') +
     '<div class="book-diagram-scroll" role="region" tabindex="0" aria-label="' + (ru ? 'Схема' : 'Diagram') + '">' +
-    renderDiagramView(source, state).svg + '</div><div data-diagram-error role="status" hidden></div></figure>';
+    renderDiagramView(source, state).svg + '</div><div data-diagram-error role="status" hidden></div></div>' + sourcePanel + '<div class="book-diagram-copy-status" data-diagram-copy-status role="status"></div></figure>';
 }

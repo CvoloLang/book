@@ -199,3 +199,55 @@
   .book-diagram-menu > summary { width: 2.75rem; height: 2.75rem; }
   .book-diagram .book-diagram-menu .book-diagram-menu-panel > :is(a, button) { min-height: 2.75rem; }
 }
+
+/* Source is a view of the original Markdown, not another diagram parameter. */
+.book-diagram-view-tabs {
+  display: flex;
+  gap: .25rem;
+  padding: 0 .35rem;
+  margin-bottom: .65rem;
+  border-bottom: 1px solid var(--book-diagram-frame);
+}
+.book-diagram-view-tabs > button {
+  padding: .5rem .75rem;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--book-diagram-muted);
+  font: inherit;
+  font-size: .84rem;
+  cursor: pointer;
+}
+.book-diagram-view-tabs > button[aria-pressed=true] {
+  border-bottom-color: var(--book-diagram-owner);
+  color: var(--book-diagram-foreground);
+  font-weight: 650;
+}
+.book-diagram-view-tabs > button:focus-visible {
+  outline: 2px solid var(--book-diagram-owner);
+  outline-offset: -2px;
+}
+.book-diagram [data-diagram-panel][hidden] { display: none; }
+.book-diagram-source { min-width: 0; max-width: 100%; }
+.book-diagram .book-diagram-source pre {
+  margin: 0;
+  padding: .85rem;
+  overflow: auto;
+  max-height: 32rem;
+  border: 1px solid var(--book-diagram-frame);
+  border-radius: .5rem;
+  background: color-mix(in srgb, var(--book-diagram-neutral) 6%, var(--book-diagram-background));
+  color: var(--book-diagram-foreground);
+  white-space: pre;
+  font: .82rem/1.6 ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+.book-diagram .book-diagram-source pre > code {
+  background: transparent;
+  color: inherit;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  white-space: inherit;
+}
+.book-diagram-copy-status:empty { display: none; }
+.book-diagram-copy-status { padding: .35rem; color: var(--book-diagram-muted); font-size: .8rem; }
