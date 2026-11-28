@@ -2,11 +2,13 @@
  * Safe, deterministic diagram state and template expansion.
  * Authors supply data, never executable JavaScript or arbitrary HTML.
  */
-export type State = Record<string, string | number>;
+import { parseFieldControl, readFieldRows, fieldsForLayout, fieldDeclarations, type FieldControl, type FieldRow } from './field-editor.ts';
+
+export type State = Record<string, string | number | FieldRow[]>;
 export type Option = { label: string; value: string | number };
 export type ChoiceControl = { kind: 'tabs' | 'select' | 'steps'; id: string; label: string; options: Option[]; default: string | number };
 export type RangeControl = { kind: 'slider'; id: string; label: string; min: number; max: number; step: number; default: number };
-export type Control = ChoiceControl | RangeControl;
+export type Control = ChoiceControl | RangeControl | FieldControl;
 type JsonObject = Record<string, unknown>;
 
 function fail(message: string): never { throw new Error('Diagram: ' + message); }
@@ -51,6 +53,7 @@ function controlsFrom(value: unknown): Control[] {
     if (ids.has(id)) fail('duplicate control ' + id);
     ids.add(id);
     const label = text(item.label, 'control label');
+    if (item.kind === 'fields') return parseFieldControl(item,id,label);
     if (item.kind === 'slider') {
       allowed(item, ['kind','id','label','min','max','step','default'], 'slider');
       const min = finite(item.min, 'min'), max = finite(item.max, 'max'), step = finite(item.step ?? 1, 'step');
@@ -59,7 +62,7 @@ function controlsFrom(value: unknown): Control[] {
         !onStep(max,min,step) || (max-min)/step > 1000000) fail('invalid slider range or default');
       return { kind:'slider', id, label, min, max, step, default:initial };
     }
-    if (item.kind !== 'tabs' && item.kind !== 'select' && item.kind !== 'steps') fail('control kind must be tabs, select, steps or slider');
+    if (item.kind !== 'tabs' && item.kind !== 'select' && item.kind !== 'steps') fail('control kind must be tabs, select, steps, slider or fields');
     allowed(item, ['kind','id','label','options','default'], 'choice');
     if (!Array.isArray(item.options) || !item.options.length || item.options.length > 12) fail('choice requires 1–12 options');
     const options = item.options.map((rawOption): Option => {
@@ -82,6 +85,10 @@ export function getState(controls: Control[], overrides: State = {}): State {
   for (const key of Object.keys(overrides)) if (!controls.some((control) => control.id === key)) fail('unknown control ' + key);
   for (const control of controls) {
     const value = Object.hasOwn(overrides, control.id) ? overrides[control.id] : control.default;
+    if (control.kind === 'fields') {
+      state[control.id] = readFieldRows(control,value);
+      continue;
+    }
     if (control.kind === 'slider') {
       if (typeof value !== 'number' || !Number.isFinite(value) || value < control.min || value > control.max || !onStep(value,control.min,control.step)) fail('invalid value for ' + control.id);
     } else if (!control.options.some((option) => option.value === value)) fail('invalid option for ' + control.id);
@@ -90,12 +97,12 @@ export function getState(controls: Control[], overrides: State = {}): State {
   return state;
 }
 
-/** Enumerates finite choice states; sliders retain their declared default. */
+/** Enumerates finite choices; sliders and editors retain their declared defaults. */
 export function getVariants(source: string): State[] {
   const controls = getControls(source);
   let variants: State[] = [getState(controls)];
   for (const control of controls) {
-    if (control.kind === 'slider') continue;
+    if (control.kind === 'slider' || control.kind === 'fields') continue;
     if (variants.length * control.options.length > 48) fail('at most 48 finite state combinations');
     variants = variants.flatMap((state) => control.options.map((option) => ({...state,[control.id]:option.value})));
   }
@@ -160,7 +167,7 @@ function formatted(value: unknown, format: unknown): string {
   }
 }
 
-type Context = { state: State; data: JsonObject; cache: Map<string, unknown>; active: Set<string> };
+type Context = { state: State; controls: Control[]; data: JsonObject; cache: Map<string, unknown>; active: Set<string> };
 
 function expand(value: unknown, context: Context, depth: number, budget: { remaining: number }): unknown {
   const { state, data, cache, active } = context;
@@ -212,6 +219,15 @@ function expand(value: unknown, context: Context, depth: number, budget: { remai
           if (typeof resolved !== 'string' && typeof resolved !== 'number') fail('concat requires strings or numbers');
           return String(resolved);
         }).join('');
+      }
+      case '$fields':
+      case '$fieldCode': {
+        const directive = directives[0];
+        allowed(item,[directive],'field expression');
+        const id = validId(item[directive]);
+        const control = context.controls.find((entry) => entry.id === id);
+        if (!control || control.kind !== 'fields') fail('expected a fields control: ' + id);
+        return directive === '$fields' ? fieldsForLayout(control,state[id]) : fieldDeclarations(control,state[id]);
       }
       case '$layout': {
         allowed(item,['$layout','pick'],'layout');
@@ -274,11 +290,12 @@ function expand(value: unknown, context: Context, depth: number, budget: { remai
 export function materializeDiagram(source: string, overrides: State = {}): string {
   const input = root(source);
   const {controls, data: rawData, ...diagram} = input;
-  const state = getState(controlsFrom(controls),overrides);
+  const parsedControls = controlsFrom(controls);
+  const state = getState(parsedControls,overrides);
   const data = rawData === undefined ? {} : object(rawData,'data');
   if (Object.keys(data).length > 64) fail('at most 64 named data entries');
   for (const key of Object.keys(data)) validId(key);
-  const context: Context = {state,data,cache:new Map(),active:new Set()};
+  const context: Context = {state,controls:parsedControls,data,cache:new Map(),active:new Set()};
   const resolved = expand(diagram,context,0,{remaining:16000});
   // References may share a subtree. Bound serialization too, so a graph of
   // repeated references cannot expand into an unbounded JSON document.

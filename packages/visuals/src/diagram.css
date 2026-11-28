@@ -261,3 +261,38 @@
 /* Book can replace the native step selector with its own accessible UI. */
 .book-diagram-steps > [data-diagram-select-host] { flex: 1; min-width: 0; }
 .book-diagram-steps > select[hidden] { display: none; }
+
+/* Editable fields stay in HTML; the memory model uses the shared SVG renderer. */
+.book-field-rows { display: grid; gap: .45rem; }
+.book-field-row { display: grid; grid-template-columns: minmax(5rem,1fr) minmax(0,2fr) auto; align-items: center; gap: .5rem; }
+.book-field-row > input {
+  min-width: 0; width: 100%; box-sizing: border-box; padding: .5rem;
+  border: 1px solid var(--book-diagram-frame); border-radius: .4rem;
+  background: var(--book-diagram-background); color: var(--book-diagram-foreground); font: .85rem ui-monospace,monospace;
+}
+.book-field-types,.book-field-row-actions,.book-field-actions { display: flex; flex-wrap: wrap; gap: .25rem; min-width: 0; }
+.book-field-editor button {
+  display: inline-flex; align-items: center; justify-content: center; gap: .3rem;
+  min-height: 2rem; padding: .35rem .5rem; border: 1px solid var(--book-diagram-frame);
+  border-radius: .4rem; background: transparent; color: var(--book-diagram-foreground);
+  font: inherit; font-size: .78rem; cursor: pointer;
+}
+.book-field-types > button { flex: 1 1 auto; }
+.book-field-row-actions > button { width: 2rem; padding: 0; }
+.book-field-editor button[aria-pressed=true] {
+  border-color: var(--book-diagram-owner);
+  background: color-mix(in srgb,var(--book-diagram-owner) 15%,transparent);
+}
+.book-field-editor button:disabled { opacity: .35; cursor: default; }
+.book-field-editor button:not(:disabled):hover { border-color: var(--book-diagram-owner); }
+.book-field-editor :is(input,button):focus-visible { outline: 2px solid var(--book-diagram-owner); outline-offset: 2px; }
+.book-field-actions { gap: .4rem; padding-top: .25rem; }
+.book-field-editor [data-field-status] { color: var(--book-diagram-error); font-size: .8rem; }
+.book-field-editor [data-field-status]:empty { display: none; }
+@media (max-width: 767px) {
+  .book-field-row { grid-template-columns: minmax(0,1fr) auto; border-bottom: 1px solid var(--book-diagram-frame); padding-bottom: .5rem; }
+  .book-field-types { grid-column: 1 / -1; grid-row: 2; }
+  .book-field-row-actions { grid-column: 2; grid-row: 1; }
+  .book-field-editor button { min-height: 2.5rem; }
+  .book-field-row-actions > button { width: 2.5rem; }
+}

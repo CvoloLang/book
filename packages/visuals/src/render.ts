@@ -1,3 +1,4 @@
+import { renderFieldEditor } from './field-editor-view.ts';
 import { getControls, getState, getVariants, materializeDiagram, type State, type Control } from './model.ts';
 
 /**
@@ -183,7 +184,7 @@ function parse(source: string): Diagram {
     if (kind === 'bar' && (plotValue === undefined || max === undefined || plotValue > max)) fail('bar requires 0 <= value <= max');
     return {
       kind, id, children, segments, value: plotValue, max, scale: number(item.scale, 'scale', 4, 120),
-      title: string(item.title, 'title'), code: string(item.code, 'code'), text: string(item.text, 'text'),
+      title: string(item.title, 'title'), code: string(item.code, 'code', 1024), text: string(item.text, 'text'),
       tone: choice(item.tone, tones, 'tone') ?? 'neutral', style: parseStyle(item.style),
       moved: item.moved === true,
       width: number(item.width, 'width', 8, 1200), height: number(item.height, 'height', 0, 800),
@@ -563,11 +564,17 @@ function paintPlot(layout: Layout, theme: Theme) {
   const label = (value: string, cx: number, cy: number, size: number, fill: string, anchor = 'middle') =>
     '<text x="' + cx + '" y="' + cy + '" font-size="' + size + '" text-anchor="' + anchor + '" fill="' + fill + '">' + escape(value) + '</text>';
   let offset = 0;
+  let lastLabelEnd = -Infinity;
+  const finalLabelStart = x + total * scale - textWidth(String(total),12,false);
   for (const segment of element.segments) {
     const sx = x + offset * scale;
     const w = segment.bytes * scale;
     const colorValue = segment.style.color ?? color(theme, segment.tone);
-    result += label(String(offset), sx, y + 8, 12, color(theme,'muted'), 'start');
+    const labelWidth = textWidth(String(offset),12,false);
+    if (offset === 0 || (sx >= lastLabelEnd + 5 && sx + labelWidth + 5 <= finalLabelStart)) {
+      result += label(String(offset), sx, y + 8, 12, color(theme,'muted'), 'start');
+      lastLabelEnd = sx + labelWidth;
+    }
     result += '<rect x="' + sx + '" y="' + (y+18) + '" width="' + w + '" height="54" rx="' + (segment.style.radius ?? 3) +
       '" fill="' + (segment.style.fill ?? colorValue) + '" fill-opacity="' + (segment.style.fillOpacity ?? .16) + '" stroke="' +
       (segment.style.stroke ?? colorValue) + '" stroke-opacity="' + (segment.style.strokeOpacity ?? 1) + '" stroke-width="' + (segment.style.strokeWidth ?? 1.2) +
@@ -696,6 +703,7 @@ function renderControls(controls: Control[], id: string, ru: boolean) {
   return controls.map((control) => {
     const name = escape(id + '-' + control.id);
     const label = escape(control.label);
+    if (control.kind === 'fields') return renderFieldEditor(control,ru);
     if (control.kind === 'slider') {
       return '<label class="book-diagram-control"><span>' + label + ' <output data-diagram-output="' + control.id + '">' + control.default + '</output></span>' +
         '<input type="range" name="' + name + '" data-diagram-control="' + control.id + '" min="' + control.min + '" max="' + control.max + '" step="' + control.step + '" value="' + control.default + '"></label>';

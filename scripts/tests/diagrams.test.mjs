@@ -302,3 +302,33 @@ for (const lang of ['ru','en']) {
     assert.match(renderDiagramFigure(block.source,lang,'steps'),/data-diagram-step-count/);
   });
 }
+
+test('field editors validate state, recompute padding, and export current fields', async () => {
+  const {getControls,getState,getVariants,orderFields,materializeDiagram} = await import('../../packages/visuals/src/index.ts');
+  const fields = {kind:'fields',id:'fields',label:'Fields',maxFields:6,types:[
+    {name:'byte',size:1,alignment:1},{name:'int',size:4,alignment:4}],
+    default:[{name:'Kind',type:'byte'},{name:'Value',type:'int'},{name:'Flags',type:'byte'}]};
+  const source=JSON.stringify({controls:[fields],data:{fields:{$fields:'fields'}},
+    title:{$format:'bytes',value:{$layout:{$ref:'fields'},pick:'size'}},
+    body:{kind:'column',children:[{kind:'memory-layout',segments:{$layout:{$ref:'fields'},pick:'segments'}},{kind:'node',code:{$fieldCode:'fields'}}]}});
+  const [control]=getControls(source);
+  const original=getState([control]).fields;
+  const sorted=orderFields(control,original);
+  assert.deepEqual(sorted.map(row=>row.name),['Value','Kind','Flags']);
+  assert.equal(JSON.parse(materializeDiagram(source)).title,'12 B');
+  assert.equal(JSON.parse(materializeDiagram(source,{fields:sorted})).title,'8 B');
+  assert.match(renderDiagramSvg(source,'dark',{fields:sorted}),/int Value;/);
+  assert.match(renderDiagramFigure(source,'en','fields'),/data-diagram-field-editor="fields"/);
+  assert.equal(getVariants(source).length,1);
+  for (const bad of [[],[{name:'<script>',type:'int'}],[{name:'X',type:'unknown'}],[{name:'X',type:'int'},{name:'X',type:'byte'}]]) {
+    assert.throws(()=>renderDiagramSvg(source,'light',{fields:bad}),/Diagram:/);
+  }
+});
+
+test('field editors support the full declared field limit with long names', () => {
+  const names=Array.from({length:12},(_,i)=>({name:'LongFieldNameForTest'+i,type:'VeryLongTypeIdentifier'}));
+  const source=JSON.stringify({controls:[{kind:'fields',id:'fields',label:'Fields',maxFields:12,
+    types:[{name:'VeryLongTypeIdentifier',size:64,alignment:64}],default:names}],
+    body:{kind:'column',children:[{kind:'memory-layout',segments:{$layout:{$fields:'fields'},pick:'segments'}},{kind:'node',code:{$fieldCode:'fields'}}]}});
+  assert.match(renderDiagramSvg(source,'dark'),/LongFieldNameForTest11;/);
+});

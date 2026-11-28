@@ -1,3 +1,5 @@
+import { enhanceFieldEditors } from './field-editor-view.ts';
+import { readFieldRows } from './field-editor.ts';
 import { getControls, getState, type State } from './model.ts';
 import { renderDiagramSvg, renderDiagramView } from './render.ts';
 
@@ -47,7 +49,9 @@ export function enhanceDiagrams(article: HTMLElement, options: { openSource?: (m
     const control = controls.find((item) => item.id === id);
     if (!control) return;
     const state = {...(states.get(figure) ?? getState(controls))};
-    if (control.kind === 'slider') {
+    if (control.kind === 'fields') {
+      state[id] = readFieldRows(control, JSON.parse(input.value));
+    } else if (control.kind === 'slider') {
       state[id] = Number(input.value);
       const output = figure.querySelector<HTMLOutputElement>('[data-diagram-output="' + id + '"]');
       if (output) output.value = input.value;
@@ -196,12 +200,14 @@ export function enhanceDiagrams(article: HTMLElement, options: { openSource?: (m
   owner.addEventListener('keydown', onMenuKeydown);
   article.addEventListener('click',beforeDownload);
   article.addEventListener('input',onInput);
+  const destroyFieldEditors = enhanceFieldEditors(article);
   article.addEventListener('click',onStepClick);
   return () => {
     owner.removeEventListener('click', onMenuClick);
     owner.removeEventListener('keydown', onMenuKeydown);
     article.removeEventListener('click',beforeDownload);
     article.removeEventListener('input',onInput);
+    destroyFieldEditors();
     article.removeEventListener('click',onStepClick);
     if (frame) cancelAnimationFrame(frame);
     pending.clear();
