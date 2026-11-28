@@ -12,7 +12,8 @@
     "prepare": "npm run docs:build && svelte-kit sync",
     "docs:verify": "node scripts/verify-content.mjs",
     "diagrams:test": "node --experimental-strip-types --test scripts/tests/diagrams.test.mjs",
-    "diagrams:export": "node --experimental-strip-types scripts/export-diagrams.mjs"
+    "diagrams:export": "node --experimental-strip-types scripts/export-diagrams.mjs",
+    "diagrams:html": "node --experimental-strip-types scripts/export-diagram-html.mjs"
   },
   "devDependencies": {
     "@sveltejs/adapter-static": "^3.0.10",

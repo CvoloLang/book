@@ -133,3 +133,16 @@ for (const lang of ['ru','en']) {
     }
   });
 }
+
+test('standalone page contains controls, inline SVG, and an isolated runtime', async () => {
+  const { composeStandaloneHtml } = await import('../export-diagram-html.mjs');
+  const diagram = JSON.stringify({controls:[{kind:'tabs',id:'x',label:'State',options:[{label:'A',value:'a'},{label:'B',value:'b'}],default:'a'}],
+    body:{kind:'node',title:{$var:'x'}}});
+  const page = composeStandaloneHtml([renderDiagramFigure(diagram,'standalone/en','1')],'.book-diagram{}','/* </script> */','en');
+  assert.match(page,/<!doctype html>/);
+  assert.match(page,/data-diagram-source=/);
+  assert.match(page,/type="radio"/);
+  assert.match(page,/<svg /);
+  assert.ok(!page.includes('src="http'));
+  assert.equal((page.match(/<\/script>/gi) ?? []).length,1);
+});

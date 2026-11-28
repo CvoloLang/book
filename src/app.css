@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./lib/docs/diagrams/diagram.css";
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
@@ -770,97 +771,4 @@ html.dark .code-frame .code-fragment-mark,
 html.dark .code-tab-panel .code-fragment-mark {
   background: rgb(250 204 21 / .2);
   box-shadow: 0 0 0 1px rgb(250 204 21 / .18);
-}
-
-
-/* Documentation diagrams: the same semantic palette is used by the portable
-   SVG exporter. Scroll rather than shrinking long labels on narrow screens. */
-.book-diagram {
-  --book-diagram-foreground: #27272a;
-  --book-diagram-muted: #52525b;
-  --book-diagram-background: #ffffff;
-  --book-diagram-frame: #d4d4d8;
-  --book-diagram-neutral: #71717a;
-  --book-diagram-owner: #7c3aed;
-  --book-diagram-read: #2563eb;
-  --book-diagram-write: #b45309;
-  --book-diagram-success: #15803d;
-  --book-diagram-error: #b91c1c;
-  margin: 1.4rem 0;
-}
-.dark .book-diagram {
-  --book-diagram-foreground: #e4e4e7;
-  --book-diagram-muted: #a1a1aa;
-  --book-diagram-background: #09090b;
-  --book-diagram-frame: #3f3f46;
-  --book-diagram-owner: #8b5cf6;
-  --book-diagram-read: #60a5fa;
-  --book-diagram-write: #f59e0b;
-  --book-diagram-success: #4ade80;
-  --book-diagram-error: #f87171;
-}
-.book-diagram-scroll {
-  max-width: 100%;
-  overflow-x: auto;
-  padding-bottom: .2rem;
-  border-radius: .75rem;
-}
-.book-diagram-scroll:focus-visible {
-  outline: 2px solid var(--book-diagram-owner);
-  outline-offset: 3px;
-}
-.book-diagram-scroll > svg {
-  display: block;
-  width: auto;
-  height: auto;
-  max-width: none;
-  margin-inline: auto;
-}
-.book-diagram-actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: .85rem;
-  margin-top: .35rem;
-  font-size: .75rem;
-}
-
-.book-diagram { width: min(100%, var(--book-diagram-width, 100%)); margin-inline: auto; }
-.book-diagram-actions a { padding: .25rem .55rem; border: 1px solid var(--book-diagram-frame); border-radius: .375rem; text-decoration: none; }
-.book-diagram-actions a:hover { border-color: var(--book-diagram-owner); }
-
-/* Visible, keyboard-accessible choice pills. Controls never sit inside SVG. */
-.book-diagram-interactive { width: min(100%, max(480px, var(--book-diagram-width))); }
-.book-diagram-controls {
-  display: grid; gap: .85rem; padding: .9rem 1rem;
-  border: 1px solid var(--book-diagram-frame); border-radius: .75rem;
-  background: var(--book-diagram-background); margin-bottom: .65rem;
-}
-.book-diagram-control { display: grid; gap: .4rem; min-width: 0; border: 0; padding: 0; margin: 0; }
-.book-diagram-control legend, .book-diagram-control > span { font-size: .82rem; font-weight: 600; color: var(--book-diagram-foreground); }
-.book-diagram-control output { float: right; font-variant-numeric: tabular-nums; }
-.book-diagram-options { display: flex; flex-wrap: wrap; gap: .35rem; padding: .25rem; border: 1px solid var(--book-diagram-frame); border-radius: .6rem; }
-.book-diagram-options label { position: relative; flex: 1; min-width: max-content; cursor: pointer; }
-.book-diagram-options input { position: absolute; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
-.book-diagram-options span { display: block; padding: .4rem .7rem; text-align: center; border: 1px solid transparent; border-radius: .4rem; font-size: .84rem; color: var(--book-diagram-muted); }
-.book-diagram-options input:checked + span { color: var(--book-diagram-foreground); border-color: var(--book-diagram-owner); background: color-mix(in srgb, var(--book-diagram-owner) 14%, transparent); font-weight: 650; }
-.book-diagram-options input:focus-visible + span { outline: 2px solid var(--book-diagram-owner); outline-offset: 2px; }
-.book-diagram-control input[type=range] { width: 100%; accent-color: var(--book-diagram-owner); cursor: pointer; }
-.book-diagram-control select { border: 1px solid var(--book-diagram-frame); border-radius: .4rem; padding: .45rem; color: var(--book-diagram-foreground); background: var(--book-diagram-background); }
-.book-diagram [data-diagram-error] { color: var(--book-diagram-error); font-size: .85rem; margin-top: .5rem; }
-.book-diagram-actions a[aria-disabled=true] { opacity: .5; pointer-events: none; }
-
-.book-diagram-interactive {
-  padding: .65rem; border: 1px solid var(--book-diagram-frame);
-  border-radius: .9rem; background: var(--book-diagram-background);
-}
-.book-diagram-interactive .book-diagram-controls {
-  border: 0; border-bottom: 1px solid var(--book-diagram-frame);
-  border-radius: 0; background: transparent; padding: .3rem .35rem .9rem;
-}
-.book-diagram-interactive .book-diagram-scroll > svg > rect:first-of-type {
-  stroke: none; fill: none;
-}
-.book-diagram-options label:hover span {
-  background: color-mix(in srgb, var(--book-diagram-owner) 8%, transparent);
 }
