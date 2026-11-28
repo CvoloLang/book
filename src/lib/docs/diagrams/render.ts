@@ -296,13 +296,13 @@ function measure(element: Element, minimumWidth = 0): Layout {
   );
   const longestWord = Math.max(0, ...[ [element.title, titleSize, false], [element.code, codeSize, true], [element.text, textSize, false] ].flatMap(([value, size, mono]) =>
     String(value ?? '').split(/\s+/).map((word) => textWidth(word, Number(size), Boolean(mono)))));
-  const w = Math.ceil(Math.max(minimumWidth, element.width ?? 0, framed ? 94 : 0,
+  const w = Math.ceil(Math.max(minimumWidth, element.width ?? 0, framed && element.width === undefined ? 94 : 0,
     childWidth + 2 * padding, Math.min(naturalText, 310) + 2 * padding + 2, longestWord + 2 * padding + 2));
   const lines = textLines(element, Math.max(20, w - 2 * padding));
   const header = linesHeight(lines);
   const separation = header && children.length ? 12 : 0;
   const naturalHeight = header + separation + childHeight + 2 * padding;
-  const h = Math.ceil(Math.max(element.height ?? 0, framed ? 52 : 0, naturalHeight));
+  const h = Math.ceil(Math.max(element.height ?? 0, framed && element.height === undefined ? 52 : 0, naturalHeight));
   const roomW = w - 2 * padding;
   const roomH = h - 2 * padding - header - separation;
 
