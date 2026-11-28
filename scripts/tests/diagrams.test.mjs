@@ -206,3 +206,15 @@ test('every diagram has a source view with escaped original Markdown', () => {
   assert.match(figure, /a &lt; b &amp;&amp; c &gt; d/);
   assert.ok(!figure.includes('<Demo>'));
 });
+
+test('figure alignment is optional, validated and independent of SVG geometry', () => {
+  const base = {body:{kind:'node',title:'Example'}};
+  const original = renderDiagramSvg(JSON.stringify(base));
+  for (const align of ['left','center','right']) {
+    const input = JSON.stringify({...base,align});
+    assert.ok(renderDiagramFigure(input,'en','align').includes('data-diagram-align="' + align + '"'));
+    assert.equal(renderDiagramSvg(input),original);
+  }
+  assert.doesNotMatch(renderDiagramFigure(JSON.stringify(base),'en','default'),/data-diagram-align=/);
+  assert.throws(()=>renderDiagramSvg(JSON.stringify({...base,align:'invalid'})),/root.align/);
+});

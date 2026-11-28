@@ -251,3 +251,9 @@
 }
 .book-diagram-copy-status:empty { display: none; }
 .book-diagram-copy-status { padding: .35rem; color: var(--book-diagram-muted); font-size: .8rem; }
+
+/* Figure alignment is independent of the layout inside the SVG. */
+.book-diagram[data-diagram-align] { width: min(100%, var(--book-diagram-width, 100%)); }
+.book-diagram[data-diagram-align="left"] { margin-inline: 0 auto; }
+.book-diagram[data-diagram-align="center"] { margin-inline: auto; }
+.book-diagram[data-diagram-align="right"] { margin-inline: auto 0; }

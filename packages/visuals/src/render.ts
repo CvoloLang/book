@@ -38,7 +38,7 @@ type Element = {
   children: Element[];
 };
 type Edge = { from: string; to: string; tone: Tone; style: Style; label?: string; arrow: boolean; fromSide?: Side; toSide?: Side };
-type Diagram = { title: string; caption: string; width?: number; style: Style; body: Element; edges: Edge[] };
+type Diagram = { title: string; caption: string; align?: 'left' | 'center' | 'right'; width?: number; style: Style; body: Element; edges: Edge[] };
 type Point = { x: number; y: number };
 type Rect = Point & { w: number; h: number };
 type TextLine = { value: string; size: number; mono: boolean; strong: boolean; muted: boolean; strike: boolean };
@@ -154,7 +154,7 @@ function parse(source: string): Diagram {
   try { raw = JSON.parse(source); }
   catch (error) { fail(error instanceof Error ? error.message : 'invalid JSON'); }
   const root = record(raw, 'root');
-  keys(root, ['title', 'caption', 'body', 'edges', 'width', 'style'], 'root');
+  keys(root, ['title', 'caption', 'body', 'edges', 'width', 'style', 'align'], 'root');
   const ids = new Set<string>();
   let count = 0;
 
@@ -207,7 +207,7 @@ function parse(source: string): Diagram {
     return { from, to, tone: choice(edge.tone, tones, 'edge tone') ?? 'owner', style: parseStyle(edge.style), label: string(edge.label, 'edge.label', 80), arrow: edge.arrow !== false,
       fromSide: choice(edge.fromSide, sides, 'fromSide'), toSide: choice(edge.toSide, sides, 'toSide') };
   });
-  return { title: string(root.title, 'title') ?? '', caption: string(root.caption, 'caption', 400) ?? '', width: number(root.width, 'width', 320, 1600), style: parseStyle(root.style), body, edges };
+  return { title: string(root.title, 'title') ?? '', caption: string(root.caption, 'caption', 400) ?? '', align: choice(root.align, ['left', 'center', 'right'], 'root.align'), width: number(root.width, 'width', 320, 1600), style: parseStyle(root.style), body, edges };
 }
 
 // Deterministic text metrics with deliberately generous glyph widths. This
@@ -575,7 +575,7 @@ function build(source: string, state: State = {}, embedded = false) {
       header + paint(layout, theme) + edges.map(({ edge, points }) => paintEdge(points, edge, theme)).join('') +
       footer + '</svg>';
   }
-  return { svg, width, height, title: diagram.title };
+  return { svg, width, height, title: diagram.title, align: diagram.align };
 }
 
 /** Portable SVG with explicit colors and dimensions; usable as ![](file.svg). */
@@ -653,7 +653,7 @@ export function renderDiagramFigure(source: string, locale: 'ru' | 'en', id: str
     '<button type="button" data-diagram-view="source" aria-pressed="false">' + (ru ? 'Исходник' : 'Source') + '</button></div>';
   const markdown = '\x60\x60\x60diagram\n' + source + '\n\x60\x60\x60';
   const sourcePanel = '<div class="book-diagram-source" data-diagram-panel="source" hidden><pre tabindex="0"><code data-diagram-markdown>' + escape(markdown) + '</code></pre></div>';
-  return '<figure class="book-diagram' + (controls.length ? ' book-diagram-interactive' : '') + '" style="--book-diagram-width:' + preferredWidth + 'px"' + interactive + '>' + toolbar + sourceTabs + '<div data-diagram-panel="preview">' +
+  return '<figure class="book-diagram' + (controls.length ? ' book-diagram-interactive' : '') + '" style="--book-diagram-width:' + preferredWidth + 'px"' + (diagram.align ? ' data-diagram-align="' + diagram.align + '"' : '') + interactive + '>' + toolbar + sourceTabs + '<div data-diagram-panel="preview">' +
     (controls.length ? '<div class="book-diagram-controls">' + renderControls(controls,filename) + '</div>' : '') +
     '<div class="book-diagram-scroll" role="region" tabindex="0" aria-label="' + (ru ? 'Схема' : 'Diagram') + '">' +
     renderDiagramView(source, state).svg + '</div><div data-diagram-error role="status" hidden></div></div>' + sourcePanel + '<div class="book-diagram-copy-status" data-diagram-copy-status role="status"></div></figure>';
