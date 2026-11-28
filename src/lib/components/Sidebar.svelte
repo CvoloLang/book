@@ -5,7 +5,7 @@
   import manifestData from '$lib/generated/manifest.json';
   import type { ManifestGroup, NavNode } from '$lib/docs/types';
   import { normalizeDocSlug } from '$lib/docs/slug';
-  let { onNavigate }: { onNavigate?: () => void } = $props();
+  let { onNavigate, drawer = false }: { onNavigate?: () => void; drawer?: boolean } = $props();
   const manifests = manifestData as Record<string, ManifestGroup[]>;
   const manifest = $derived(manifests[`${$page.params.version}/${$page.params.lang}`] ?? []);
   const activeSlug = $derived(normalizeDocSlug($page.params.slug));
@@ -73,7 +73,7 @@
   {/if}
 </li>
 {/snippet}
-<aside class="sidebar-scrollbar h-[calc(100vh-var(--header-h))] overflow-y-auto px-3 py-5">
+<aside class={drawer ? "min-h-0 flex-1 overflow-y-auto overscroll-contain sidebar-scrollbar px-3 py-3" : "sidebar-scrollbar h-[calc(100vh-var(--header-h))] overflow-y-auto px-3 py-5"}>
 <a href={`${base}/${$page.params.lang}/${$page.params.version}/docs/`} onclick={() => onNavigate?.()} class="mb-3 block rounded-lg px-2 py-1.5 text-sm font-semibold text-zinc-900 hover:bg-zinc-100 dark:text-zinc-100 dark:hover:bg-zinc-900">Cvolo Docs</a>
 <nav class="mb-5 grid grid-cols-1 gap-1 border-b border-zinc-200 pb-4 dark:border-zinc-800">{#each manifest as group}<a href={`${base}/${$page.params.lang}/${$page.params.version}/docs/${group.id}/`} onclick={() => onNavigate?.()} class={['rounded-md px-2 py-1.5 text-xs font-medium',activeGroupId===group.id?'bg-violet-50 text-violet-800 dark:bg-violet-950/40 dark:text-violet-300':'text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-zinc-100'].join(' ')}>{group.title}</a>{/each}</nav>
 {#each visibleGroups as group}<section class="mb-6"><h2 class="mb-2 px-2 text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-400 dark:text-zinc-500">{group.title}</h2><ul class="space-y-0.5">{#each group.documents as document}{@render nodeLink(document.nav,0)}{/each}</ul></section>{/each}

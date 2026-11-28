@@ -784,3 +784,15 @@ html.dark .code-tab-panel .code-fragment-mark {
 @media (max-width: 640px) {
   .source-modal.diagram-source-modal { height: calc(100dvh - 1rem); }
 }
+
+/* Modal overlays own their scrolling; the document remains stationary. */
+html:has(.mobile-site-menu[open], .mobile-contents-overlay, .search-overlay, .source-modal-backdrop),
+body:has(.mobile-site-menu[open], .mobile-contents-overlay, .search-overlay, .source-modal-backdrop) {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+@media (min-width: 1024px) {
+  html:has(.mobile-contents-overlay):not(:has(.mobile-site-menu[open], .search-overlay, .source-modal-backdrop)),
+  body:has(.mobile-contents-overlay):not(:has(.mobile-site-menu[open], .search-overlay, .source-modal-backdrop)) { overflow: revert; overscroll-behavior: auto; }
+}
+.source-modal-body { overscroll-behavior: contain; }

@@ -162,7 +162,10 @@
   }
 
   function onWindowKeydown(event: KeyboardEvent) {
-    if (event.key === 'Escape' && sourceOpen) closeSource();
+    if (event.key === 'Escape') {
+      if (sourceOpen) closeSource();
+      else if (mobileNav) mobileNav = false;
+    }
   }
 
   async function openSource(button: HTMLElement) {
@@ -430,13 +433,13 @@
 </div>
 
 {#if mobileNav}
-  <div class="fixed inset-0 z-50 bg-zinc-950/30 lg:hidden" role="presentation" onclick={(event) => event.currentTarget === event.target && (mobileNav = false)}>
-    <div class="h-full w-[min(88vw,320px)] border-r border-zinc-200 bg-white shadow-xl dark:border-zinc-800 dark:bg-zinc-950">
-      <div class="flex h-12 items-center justify-between border-b border-zinc-200 px-4 dark:border-zinc-800">
+  <div class="mobile-contents-overlay fixed inset-0 z-50 bg-zinc-950/50 lg:hidden" role="presentation" onclick={(event) => event.currentTarget === event.target && (mobileNav = false)}>
+    <div role="dialog" aria-modal="true" aria-label={t(lang, 'common.contents')} class="flex h-[100dvh] max-h-full w-[min(88vw,320px)] flex-col overflow-hidden border-r border-zinc-200 bg-white shadow-xl dark:border-zinc-800 dark:bg-zinc-950">
+      <div class="flex h-12 shrink-0 items-center justify-between border-b border-zinc-200 px-4 dark:border-zinc-800">
         <span class="text-sm font-semibold text-zinc-900 dark:text-white">{t(lang, 'common.contents')}</span>
         <button type="button" onclick={() => (mobileNav = false)} class="grid size-8 place-items-center rounded-md text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-900" aria-label={t(lang, 'common.closeNavigation')}>×</button>
       </div>
-      <Sidebar onNavigate={() => (mobileNav = false)} />
+      <Sidebar drawer onNavigate={() => (mobileNav = false)} />
     </div>
   </div>
 {/if}
