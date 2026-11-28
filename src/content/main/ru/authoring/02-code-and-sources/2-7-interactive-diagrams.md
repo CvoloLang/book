@@ -15,7 +15,7 @@
       ">"
     ]
   },
-  "caption": "Учебная модель: Player — 8 B, long — 8 B, uint — 4 B. Фактический ABI зависит от платформы.",
+  "caption": "Illustrative model: Player is 8 B, long is 8 B, uint is 4 B. Actual ABI depends on the target.",
   "width": 730,
   "controls": [
     {
@@ -31,7 +31,7 @@
     {
       "kind": "tabs",
       "id": "view",
-      "label": "Представление",
+      "label": "View",
       "options": [
         { "label": "Memory layout", "value": "layout" },
         { "label": "Fields", "value": "fields" },
@@ -189,7 +189,7 @@
           },
           "code": {
             "kind": "node",
-            "title": "Условное представление",
+            "title": "Illustrative expansion",
             "width": 640,
             "code": {
               "$switch": "history",
@@ -245,23 +245,23 @@
 
 ```diagram
 {
-  "title": "Оптимизация layout структуры",
+  "title": "Structure layout optimization",
   "width": 730,
   "caption": {
     "$concat": [
-      "При условии, что размер и выравнивание ",
+      "Assuming the size and alignment of ",
       { "$var": "type" },
-      " составляют ",
+      " are ",
       { "$ref": "typeSize" },
       " B. ",
-      "Модель естественного выравнивания."
+      "Natural-alignment model."
     ]
   },
   "controls": [
     {
       "kind": "tabs",
       "id": "type",
-      "label": "Тип поля Value",
+      "label": "Value field type",
       "options": [
         { "label": "byte", "value": "byte" },
         { "label": "short", "value": "short" },
@@ -270,7 +270,7 @@
       ],
       "default": "int"
     },
-    { "kind": "slider", "id": "count", "label": "Количество элементов", "min": 1000, "max": 1000000, "step": 1000, "default": 1000000 }
+    { "kind": "slider", "id": "count", "label": "Element count", "min": 1000, "max": 1000000, "step": 1000, "default": 1000000 }
   ],
   "data": {
     "typeSize": {
@@ -371,7 +371,7 @@
         "kind": "memory-layout",
         "title": {
           "$concat": [
-            "Исходный layout · ",
+            "Original layout · ",
             {
               "$format": "bytes",
               "value": { "$ref": "beforeSize" }
@@ -389,7 +389,7 @@
         "kind": "memory-layout",
         "title": {
           "$concat": [
-            "Оптимизированный layout · ",
+            "Optimized layout · ",
             {
               "$format": "bytes",
               "value": { "$ref": "afterSize" }
@@ -442,7 +442,7 @@
         "kind": "bar",
         "title": {
           "$concat": [
-            "До: ",
+            "Before: ",
             {
               "$format": "mib",
               "value": { "$ref": "beforeBytes" }
@@ -458,7 +458,7 @@
         "kind": "bar",
         "title": {
           "$concat": [
-            "После: ",
+            "After: ",
             {
               "$format": "mib",
               "value": { "$ref": "afterBytes" }
@@ -476,7 +476,7 @@
         "children": [
           {
             "kind": "metric",
-            "title": "Экономия памяти",
+            "title": "Memory savings",
             "code": {
               "$format": "percent",
               "value": { "$ref": "ratio" }
@@ -487,7 +487,7 @@
           },
           {
             "kind": "metric",
-            "title": "Экономия на массиве",
+            "title": "Array savings",
             "code": {
               "$format": "mb",
               "value": { "$ref": "saved" }
@@ -510,14 +510,14 @@
 
 ```diagram
 {
-  "title": "Организация данных частиц",
+  "title": "Particle data organization",
   "width": 730,
-  "caption": "Условная модель с одинаковым размером полей. Выделение показывает обрабатываемое поле, а не гарантированное ускорение.",
+  "caption": "Illustrative equal-sized fields. Highlighting indicates the processed field, not guaranteed speedup.",
   "controls": [
     {
       "kind": "tabs",
       "id": "storage",
-      "label": "Представление",
+      "label": "View",
       "options": [
         { "label": "AoS", "value": "aos" },
         { "label": "SoA", "value": "soa" }
@@ -527,7 +527,7 @@
     {
       "kind": "tabs",
       "id": "field",
-      "label": "Обрабатываемое поле",
+      "label": "Processed field",
       "options": [
         { "label": "X", "value": "X" },
         { "label": "Y", "value": "Y" },
@@ -1043,7 +1043,7 @@
         }
       },
       { "kind": "divider", "width": 640, "height": 12 },
-      { "kind": "text", "text": "Физическая последовательность" },
+      { "kind": "text", "text": "Physical order" },
       {
         "kind": "memory-layout",
         "scale": 36,
@@ -1478,7 +1478,7 @@
         "kind": "text",
         "text": {
           "$switch": "storage",
-          "cases": { "aos": "Выбранные поля разделены другими полями структуры.", "soa": "Выбранные поля находятся подряд в отдельном массиве." }
+          "cases": { "aos": "Selected fields are separated by other structure fields.", "soa": "Selected fields are contiguous in a separate array." }
         },
         "width": 640
       }
@@ -1492,9 +1492,9 @@
 
 ```diagram
 {
-  "title": "Умножение матриц",
+  "title": "Matrix multiplication",
   "width": 730,
-  "caption": "Внутренние размерности должны совпадать: 3 × 4 умножается на 4 × 2, результат — 3 × 2.",
+  "caption": "Inner dimensions must match: 3 × 4 times 4 × 2 gives 3 × 2.",
   "body": {
     "kind": "row",
     "children": [
@@ -1754,7 +1754,7 @@
 
 ```diagram
 {
-  "title": "Архитектура приложения",
+  "title": "Application architecture",
   "width": 730,
   "body": {
     "kind": "column",
@@ -1763,7 +1763,7 @@
         "kind": "node",
         "title": "Svelte 5 UI",
         "id": "ui",
-        "text": "Общие страницы и компоненты",
+        "text": "Shared pages and components",
         "width": 390,
         "style": { "color": "#a855f7", "fillOpacity": 0.12, "fontSize": 17 }
       },
@@ -1771,7 +1771,7 @@
         "kind": "node",
         "title": "Repositories / API Client",
         "id": "api",
-        "text": "Единый API-контракт",
+        "text": "Unified API contract",
         "width": 430,
         "style": { "color": "#64748b", "fillOpacity": 0.12, "fontSize": 17 }
       },
@@ -1789,7 +1789,7 @@
                 "width": 275,
                 "style": { "color": "#0ea5e9", "fillOpacity": 0.12 }
               },
-              { "kind": "node", "title": "Fixtures", "id": "fixtures", "text": "Тестовые данные\nPlaywright / VRT", "width": 275 }
+              { "kind": "node", "title": "Fixtures", "id": "fixtures", "text": "Test fixtures\nPlaywright / VRT", "width": 275 }
             ],
             "gap": 32
           },
@@ -1804,7 +1804,7 @@
                 "width": 275,
                 "style": { "color": "#16a34a", "fillOpacity": 0.12 }
               },
-              { "kind": "node", "title": "PostgreSQL / Redis", "id": "db", "text": "MQTT / BenchAgent\nРеальное оборудование", "width": 275 }
+              { "kind": "node", "title": "PostgreSQL / Redis", "id": "db", "text": "MQTT / BenchAgent\nReal hardware", "width": 275 }
             ],
             "gap": 32
           }
@@ -1870,18 +1870,18 @@
 ```diagram
 {
   "title": "Constraint Evaluator",
-  "caption": "Три возможных результата вычисления условия.",
+  "caption": "Three possible constraint evaluation results.",
   "width": 730,
   "body": {
     "kind": "column",
     "children": [
-      { "kind": "node", "title": "Constraint Evaluator", "id": "eval", "text": "Вычисление выражения where", "width": 380 },
+      { "kind": "node", "title": "Constraint Evaluator", "id": "eval", "text": "Evaluate where expression", "width": 380 },
       {
         "kind": "row",
         "children": [
-          { "kind": "node", "title": "✓ Satisfied", "id": "yes", "text": "Условие выполнено", "tone": "success", "width": 200 },
-          { "kind": "node", "title": "✕ Unsatisfied", "id": "no", "text": "Условие ложно", "tone": "error", "width": 200 },
-          { "kind": "node", "title": "! Invalid", "id": "invalid", "text": "Ошибка вычисления", "tone": "write", "width": 200 }
+          { "kind": "node", "title": "✓ Satisfied", "id": "yes", "text": "Constraint satisfied", "tone": "success", "width": 200 },
+          { "kind": "node", "title": "✕ Unsatisfied", "id": "no", "text": "Constraint is false", "tone": "error", "width": 200 },
+          { "kind": "node", "title": "! Invalid", "id": "invalid", "text": "Evaluation error", "tone": "write", "width": 200 }
         ],
         "gap": 15
       }
@@ -1900,12 +1900,12 @@
 
 ```diagram
 {
-  "title": "Множество типов",
-  "caption": "Иллюстрация контракта типов; не проверка компилятора.",
+  "title": "Type set",
+  "caption": "Illustrative type contract, not a compiler conformance check.",
   "width": 730,
   "body": {
     "kind": "group",
-    "title": "Все типы Cvolo",
+    "title": "All Cvolo types",
     "width": 660,
     "children": [
       {
@@ -1974,8 +1974,8 @@
 
 ```diagram
 {
-  "title": "Передача владения между потоками",
-  "caption": "Модель передачи ресурса, а не совместного доступа.",
+  "title": "Ownership transfer across threads",
+  "caption": "A resource transfer model, not shared access.",
   "width": 730,
   "body": {
     "kind": "row",
@@ -2027,9 +2027,9 @@
 
 ```diagram
 {
-  "title": "Пример будущей диагностики",
+  "title": "Future diagnostic example",
   "width": 730,
-  "caption": "Концепт сообщения об ошибке, а не фактический вывод Cvolo.",
+  "caption": "Diagnostic concept, not actual Cvolo output.",
   "body": {
     "kind": "group",
     "tone": "neutral",
@@ -2122,3 +2122,5 @@ npm run diagrams:html -- article.md ./visuals.html ru
 Текст измеряется приближённо; длинные подписи могут потребовать большей ширины. Пересечения отдельных стрелок и подписей не оптимизируются полностью. Таблицы и сетки используют общий движок. Слайдеры не исполняют код. Будущий редактор полей структуры может использовать `computeMemoryLayout` из `model.ts`; редактирование полей пока не входит в текущий формат.
 
 Заголовок и меню «⋯» находятся в шапке карточки и не прокручиваются вместе с графикой. На мобильных экранах (до 767 CSS-пикселей) используется исходный размер схемы с горизонтальной прокруткой при необходимости, на более широких — масштабирование по ширине. В меню можно вручную переключить режим для конкретной схемы. Заголовок экспортируется и в самостоятельный SVG.
+
+Во вкладке «Исходник» можно посмотреть полный Markdown-блок каждой визуализации. При возврате в «Просмотр» выбранные параметры сохраняются. Независимый движок расположен в `packages/visuals`.

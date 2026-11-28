@@ -2122,3 +2122,5 @@ npm run diagrams:html -- article.md ./visuals.html en
 Text measurement is approximate; long labels may require extra width. Crossings between individual edges and labels are not fully optimized. Tables and grids share the general layout engine. Sliders do not execute code. A future field editor can reuse `computeMemoryLayout` in `model.ts`; editing fields is not part of the current format.
 
 The title and “⋯” menu remain in the card header outside the scrolling graphic. On mobile viewports (up to 767 CSS pixels), diagrams retain their original size and scroll horizontally if needed; larger viewports fit the available width. The menu lets readers override the mode for each diagram. Standalone SVG exports retain their title.
+
+Use the Source tab to inspect each complete Markdown fence. Switching back to Preview preserves the selected parameters. The independent engine lives in `packages/visuals`.

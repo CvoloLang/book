@@ -306,3 +306,9 @@ Use #RGB, #RGBA, #RRGGBB or #RRGGBBAA. HEX alpha multiplies explicit opacity; se
 See [interactive visualizations](2-7-interactive-diagrams.md).
 
 The title and “⋯” menu remain in the card header outside the scrolling graphic. On mobile viewports (up to 767 CSS pixels), diagrams retain their original size and scroll horizontally if needed; larger viewports fit the available width. The menu lets readers override the mode for each diagram. Standalone SVG exports retain their title.
+
+## Figure alignment and arrow spacing
+
+Set root `"align": "left"` to align the card to the left of the article. `center` and `right` are also supported. Without this property, static diagrams are centered and interactive figures fill the available width. Explicit alignment keeps the natural card width within the article. `body.align` still controls internal layout, not card placement. An edge `gap` sets endpoint clearance in SVG units (0–24). Arrows default to 5; connectors without arrowheads default to 0. Clearance is reduced automatically on short segments.
+
+The Source tab displays the complete Markdown fence; copy it from the actions menu. Example diagrams use English, while the guide and interface are localized.
