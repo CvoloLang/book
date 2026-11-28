@@ -44,8 +44,7 @@ Download a standalone SVG in either light or dark colors below each diagram. Ref
                 "kind": "column",
                 "children": [
                   { "kind": "text", "code": "other : Point" },
-                  { "kind": "node", "id": "address", "title": "Instance address", "tone": "owner", "width": 272, "height": 72 },
-                  { "kind": "text", "text": "Internal representation" }
+                  { "kind": "node", "id": "address", "title": "Instance address", "tone": "owner", "width": 272, "height": 72 }
                 ]
               }
             ]
@@ -78,7 +77,7 @@ Download a standalone SVG in either light or dark colors below each diagram. Ref
     ]
   },
   "edges": [
-    { "from": "address", "to": "value", "fromSide": "bottom", "toSide": "top" }
+    { "from": "address", "to": "value", "fromSide": "bottom", "toSide": "right" }
   ]
 }
 ```

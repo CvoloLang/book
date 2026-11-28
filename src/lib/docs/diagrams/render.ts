@@ -322,8 +322,9 @@ function route(edge: Edge, items: Layout[], canvas: Rect): Point[] {
   const start = anchor(from, fromSide), end = anchor(to, toSide);
   const a = outward(start, fromSide), b = outward(end, toSide);
   const blockers = items.filter(({ element, bounds }) =>
-    (element.kind === 'group' || element.kind === 'node') &&
-    bounds !== from && bounds !== to && !contains(bounds, from) && !contains(bounds, to))
+    (element.kind === 'group' || element.kind === 'node' || element.kind === 'text') &&
+    bounds !== from && bounds !== to && !contains(bounds, from) && !contains(bounds, to) &&
+    !contains(from, bounds) && !contains(to, bounds))
     .map(({ bounds }) => ({ x: bounds.x - 4, y: bounds.y - 4, w: bounds.w + 8, h: bounds.h + 8 }));
   // Try straight, elbow and corridor paths. Candidate corridors are derived
   // from obstacle boundaries; no pixel-based search or unbounded recursion.
