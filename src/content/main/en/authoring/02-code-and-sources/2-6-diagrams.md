@@ -283,7 +283,7 @@ npm run diagrams:export -- path/to/article.md ./images both
 
 The command extracts every `diagram` block into separate SVG files. A JSON file containing a single diagram is also accepted. Use `light` or `dark` instead of `both` to export one variant.
 
-Run `npm run diagrams:test` for tests. Invalid properties, duplicate IDs and missing edge targets produce diagnostics at build time. Wide diagrams scroll horizontally on mobile so labels remain readable.
+Run `npm run diagrams:test` for tests. Invalid properties, duplicate IDs and missing edge targets produce diagnostics at build time. On narrow screens SVG scales proportionally to the available width; interactive cards fill the article width.
 
 First-version limits: 60 elements, 40 edges, 10 nesting levels; no interactive graphs, animations or fully automatic layout of arbitrary graphs. Use explicit rows, columns and gaps for complex figures.
 

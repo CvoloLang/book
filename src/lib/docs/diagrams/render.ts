@@ -618,7 +618,7 @@ export function renderDiagramFigure(source: string, contextKey: string, id: stri
   const interactive = controls.length ? ' data-diagram-source="' + escape(source) + '"' : '';
   return '<figure class="book-diagram' + (controls.length ? ' book-diagram-interactive' : '') + '" style="--book-diagram-width:' + preferredWidth + 'px"' + interactive + '>' +
     (controls.length ? '<div class="book-diagram-controls">' + renderControls(controls,filename) + '</div>' : '') +
-    '<div class="book-diagram-scroll" tabindex="0" aria-label="' + (ru ? 'Схема' : 'Diagram') + '">' +
+    '<div class="book-diagram-scroll" aria-label="' + (ru ? 'Схема' : 'Diagram') + '">' +
     diagram.svg('book') + '</div><div data-diagram-error role="status" hidden></div><div class="book-diagram-actions">' +
     link('light', ru ? 'SVG (светлая)' : 'SVG (light)') + link('dark', ru ? 'SVG (тёмная)' : 'SVG (dark)') + '</div></figure>';
 }
